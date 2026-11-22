@@ -4,9 +4,11 @@ s=open(src,encoding='utf8').read()
 def rep(a,b,cnt=1):
     global s
     assert s.count(a)==cnt,(a[:60],s.count(a)); s=s.replace(a,b)
-eng=open('/home/claude/sim/r14engine.js').read().replace("if(typeof module!=='undefined')module.exports=r14Engine;","")
-ui=open('/home/claude/sim/r14ui.js').read()
-data=open('/home/claude/sim/r14page.json').read(); assert '</' not in data
+import os
+HERE=os.path.dirname(os.path.abspath(__file__))
+eng=open(os.path.join(HERE,'r14engine.js')).read().replace("if(typeof module!=='undefined')module.exports=r14Engine;","")
+ui=open(os.path.join(HERE,'r14ui.js')).read()
+data=open(os.path.join(HERE,'r14page.json')).read(); assert '</' not in data
 rep("{axes,par}=data;let P=data.P;","{axes,par}=data;let P=data.P;var r14E=Array.from({length:22},()=>[0,0,0]),r14Ready=false;")
 rep("for(let i=0;i<22;i++)w[i]=mat(w[par[i]],rot(axes[i],q[i],P[i]));return w}","for(let i=0;i<22;i++)w[i]=mat(w[par[i]],r14T(i,q[i]));return w}\nfunction r14T(i,a){const t=rot(axes[i],a,P[i]),e=r14E[i];if(e[0]||e[1]||e[2]){const r=dir(t,e);t[9]+=r[0];t[10]+=r[1];t[11]+=r[2]}return t}")
 m=re.search(r"function render\(paintOnly\)\s*\{",s); assert m and len(re.findall(r"function render\(paintOnly\)\s*\{",s))==1

@@ -1,0 +1,78 @@
+name: Přepočet úpravy
+run-name: Přepočet ${{ inputs.id || github.run_number }}
+
+# Automatická kontrola úpravy kloubů: přizpůsobení přelezu 21 cm, statika (tření 0,5/0,4/0,3), přesné mezery,
+# dynamická simulace (6 variant), verdikt podle mezí. Spouští simulátor (tlačítko Odeslat k přepočtu) nebo ručně
+# Actions → Přepočet úpravy. NIC NENASAZUJE. Výsledek: artefakt (stránka návrhu, protokol) a větev „prepocty“.
+
+on:
+  workflow_dispatch:
+    inputs:
+      uprava:
+        description: "JSON úpravy (export ze simulátoru) nebo cesta k souboru v repozitáři, např. upravy/2026-11-22-ramena-do-stran-40mm.json"
+        required: true
+      id:
+        description: "Označení přepočtu (vyplní simulátor; prázdné = vytvoří se samo)"
+        required: false
+        default: ""
+      rychle:
+        description: "Rychlá kontrola (mezery každá 3. poloha, jen nominální dynamika)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: prepocet-${{ inputs.id || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  prepocet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Knihovny
+        run: python -m pip install -q numpy scipy python-fcl mujoco
+      - name: Načíst a ověřit úpravu
+        id: vstup
+        env:
+          UPRAVA: ${{ inputs.uprava }}
+          VSTUP_ID: ${{ inputs.id }}
+        run: |
+          mkdir -p vystup
+          python3 -I .github/over_upravu.py vystup/uprava.json
+          echo "id=$(cat vystup/id.txt)" >> "$GITHUB_OUTPUT"
+      - name: Výpočet
+        run: python3 -I kontrola/prepocet.py vystup/uprava.json vystup ${{ inputs.rychle && '--rychle' || '' }}
+      - name: Stránka návrhu
+        run: python3 -I zdroj/uprava-kloubu/revize.py web/app/emil-h22.html vystup/vysledek.json "Emil H22 · návrh ${{ steps.vstup.outputs.id }}" vystup/navrh-${{ steps.vstup.outputs.id }}.html
+      - name: Protokol do souhrnu běhu
+        run: cat vystup/protokol.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: navrh-${{ steps.vstup.outputs.id }}
+          path: |
+            vystup/navrh-*.html
+            vystup/protokol.md
+            vystup/vysledek.json
+            vystup/uprava.json
+          retention-days: 90
+      - name: Uložit výsledek do větve prepocty
+        env:
+          ID: ${{ steps.vstup.outputs.id }}
+        run: |
+          git config user.name "Přepočet úpravy"; git config user.email "actions@users.noreply.github.com"
+          for pokus in 1 2 3 4 5; do
+            rm -rf /tmp/p; if git fetch -q origin prepocty 2>/dev/null; then git worktree add -q /tmp/p origin/prepocty; else git worktree add -q --detach /tmp/p; (cd /tmp/p && git checkout -q --orphan prepocty && git rm -rq . ); fi
+            mkdir -p "/tmp/p/prepocty/$ID"; cp vystup/uprava.json vystup/vysledek.json vystup/protokol.md "/tmp/p/prepocty/$ID/"
+            (cd /tmp/p && git add -A && git commit -q -m "Přepočet $ID" && git push -q origin HEAD:prepocty) && break
+            git worktree remove --force /tmp/p; sleep $((pokus*3))
+          done
+      - name: Verdikt
+        run: |
+          python3 -c "import json,sys;r=json.load(open('vystup/vysledek.json'));print('PROŠLO' if r['proslo'] else 'NEPROŠLO');sys.exit(0 if r['proslo'] else 1)"

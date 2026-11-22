@@ -4142,7 +4142,12 @@ $('r14ResetAll').onclick=()=>{r14Edits={};r14Ver++;r14Result=null;stop();r14Cont
 $('r14RunBtn').onclick=r14Run;$('r14ExportBtn').onclick=r14Export;$('r14ImportBtn').onclick=r14Import;
 $('r14Toggle').onclick=()=>{r14Open=!r14Open;$('r14').classList.toggle('open',r14Open);$('r14Toggle').setAttribute('aria-expanded',String(r14Open));r14Controls();render(true)};
 $('r8Assembly').addEventListener('change',()=>setTimeout(r14Controls,0));
-r14Ready=true;r14Controls();
+r14Ready=true;
+// Revize z automatického přepočtu: stránka se otevře s úpravou, ze které vznikla
+(()=>{const el=$('r14Start');if(!el)return;try{const o=JSON.parse(el.textContent),src=o.upravy||{};for(const [j,e] of Object.entries(src)){const d=(e.posun_mm||[0,0,0]).map(Number);r14Edits[+j]={d,carry:!!e.nese_dalsi_dily,rot:+e.natoceni_serva_deg||0}}
+ for(const k of Object.keys(r14Edits))if(r14Zero(r14Edits[k]))delete r14Edits[k];$('r14Mirror').checked=false;r14Ver++;r14Open=true;$('r14').classList.add('open');$('r14Toggle').setAttribute('aria-expanded','true');
+ const b=document.createElement('p');b.className='r14-verdict';b.innerHTML='<b>'+(o.revize||'Revize')+'</b> z automatického přepočtu: '+(o.proslo?'<b class="r14-ok">kontroly prošly</b>':'<b class="r14-bad">kontroly neprošly</b>')+'. Protokol je u běhu v GitHubu.';$('r14State').before(b)}catch(err){console.error('r14Start',err)}})();
+r14Controls();
 
 document.documentElement.dataset.ready='true';
 }catch(err){$('error').textContent='Model se nepodařilo vykreslit. '+err.message;console.error(err)}})();

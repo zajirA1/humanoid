@@ -1,0 +1,40 @@
+{
+ "model": "Emil H22 R13",
+ "souradnice": "základní poloha, mm: x + vlevo (z pohledu robota), y + dozadu, z + nahoru",
+ "upravy": {
+  "8": {
+   "kloub": "Rameno · předozadní pohyb · L",
+   "posun_mm": [
+    -40,
+    0.5,
+    0
+   ],
+   "nese_dalsi_dily": false,
+   "natoceni_serva_deg": 0
+  },
+  "18": {
+   "kloub": "Rameno · předozadní pohyb · P",
+   "posun_mm": [
+    40,
+    0.5,
+    0
+   ],
+   "nese_dalsi_dily": false,
+   "natoceni_serva_deg": 0
+  }
+ },
+ "souhrn": {
+  "prelez_max_vyuziti": 0.7033,
+  "prelez_kloub": "Kyčel · předozadní pohyb · P",
+  "polohy_bez_rovnovahy": 0,
+  "posun_opory_mm": 0.001,
+  "posun_trupu_mm": 0.29,
+  "mezera_dilu_odhad_mm": 9.21,
+  "odstup_schod_odhad_mm": 3.26,
+  "chuze": {
+   "r6": 0.7254,
+   "r7": 0.8102,
+   "power": 0.7688
+  }
+ }
+}
