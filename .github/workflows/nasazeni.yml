@@ -39,7 +39,11 @@ jobs:
         run: |
           test -n "$FTP_USERNAME" || { echo "Chybí secret FTP_USERNAME"; exit 1; }
           test -n "$LFTP_PASSWORD" || { echo "Chybí secret FTP_PASSWORD"; exit 1; }
-          test "${#ROBOT_HESLO}" -ge 10 || { echo "Secret ROBOT_HESLO chybí nebo má méně než 10 znaků"; exit 1; }
+          if [ "${#ROBOT_HESLO}" -lt 10 ]; then
+            if [ "${{ inputs.rezim }}" = "nasazeni" ]; then echo "Secret ROBOT_HESLO chybí nebo má méně než 10 znaků"; exit 1; fi
+            echo "::warning::Secret ROBOT_HESLO chybí – zkouška poběží s náhradním heslem, ostré nasazení se bez něj nespustí."
+            echo "ROBOT_HESLO=zkouska-bez-hesla-$RANDOM$RANDOM" >> "$GITHUB_ENV"
+          fi
           case "$FTP_SERVER_DIR" in */) ;; *) echo "FTP_SERVER_DIR musí končit lomítkem"; exit 1;; esac
       - name: Otisk hesla (vzniká jen tady, do repozitáře se nedostane)
         run: |
