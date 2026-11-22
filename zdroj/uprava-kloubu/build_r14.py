@@ -31,6 +31,7 @@ body.kondo-active #r14{display:none}
 #r14 input[type=range]{width:100%;accent-color:#ad653a}#r14 .r14-hint{color:#5c6a70;font-size:12px;margin:2px 0 0}
 #r14 .r14-btns{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}#r14 .r14-btns button{font:inherit;padding:6px 10px;border:1px solid #c9c1b2;border-radius:7px;background:#fff;color:inherit;cursor:pointer}#r14 .r14-btns button.primary{background:#1f2a30;color:#fff;border-color:#1f2a30;font-weight:600}
 #r14Facts{margin:8px 0;border-top:1px solid #e6dfd2}#r14Facts div{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid #e6dfd2}#r14Facts span{color:#5c6a70}#r14Facts b{font-weight:600;text-align:right}
+#r14 .r14-facts{margin:4px 0 8px;border-top:1px solid #e6dfd2}#r14 .r14-facts div{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid #e6dfd2}#r14 .r14-facts span{color:#5c6a70}#r14 .r14-facts b{font-weight:600;text-align:right}
 #r14State,#r14Progress{color:#5c6a70;margin:6px 0}#r14Progress:empty{display:none}
 #r14 .r14-t{width:100%;border-collapse:collapse;margin:10px 0 4px;font-size:12px}#r14 .r14-t th,#r14 .r14-t td{text-align:left;padding:4px 4px;border-bottom:1px solid #e6dfd2;vertical-align:top;font-variant-numeric:tabular-nums}#r14 .r14-t thead th{color:#5c6a70;font-weight:600}#r14 .r14-t tbody th{font-weight:400}#r14 .r14-over td{color:#8a3a2a;font-weight:600}
 #r14 .r14-verdict{background:#f3ece0;border-left:3px solid #ad653a;padding:7px 10px;border-radius:0 7px 7px 0;margin:10px 0 4px}#r14 .r14-bad{color:#8a3a2a}#r14 .r14-warn{color:#8a5a12}#r14 .r14-ok{color:#1f6b4f}#r14 .r14-stale{color:#8a3a2a}
@@ -55,6 +56,7 @@ panel='''<aside id="r14" aria-label="Úprava kloubů"><button id="r14Toggle" ari
 <h3 style="margin-top:14px">Plná kontrola v GitHubu</h3><p class="r14-hint">Pohyb jen přizpůsobí (neladí ho znovu), ale přepočítá přelez přesně: statika při třech třeních, přesné mezery ze sítí a dynamická simulace v šesti variantách. Trvá asi 10 minut, nic nenasazuje.</p>
 <label class="r14-check"><input type="checkbox" id="r14Fast"><span>Rychlá kontrola (asi 3 minuty, méně přesná)</span></label>
 <div class="r14-btns"><button class="primary" id="r14SendBtn">Odeslat k přepočtu</button></div><div id="r14Remote"></div>
+<h3 style="margin-top:14px">Vydání</h3><p class="r14-hint">Nová revize z prošlé úpravy (tlačítko u přepočtu výše) a nasazení na server – vše běží v GitHubu.</p><div id="r14Release"></div>
 <details><summary>Export a import nastavení</summary><div class="r14-btns"><button id="r14ExportBtn">Stáhnout JSON</button><button id="r14ImportBtn">Načíst z textu</button></div><textarea id="r14Json" rows="5" aria-label="Nastavení úprav jako JSON" spellcheck="false"></textarea></details>
 <p class="r14-note">V modelu táhni za kolečko vybraného kloubu. Oranžově je nakreslená vidlice vybraného kloubu, modře vidlice ostatních upravených kloubů, čárkovaně posun osy.</p>
 </div></aside>'''

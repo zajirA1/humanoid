@@ -6,7 +6,9 @@ Hetzner Webhosting M bez SSH: na serveru jen statické soubory a PHP, všechny v
 ## Pravidla, která platí vždy
 
 - **Nic se nenasazuje bez výslovného pokynu majitele.** Nasazení je jen ruční workflow *Nasazení na Hetzner*,
-  spouští ho majitel; výchozí režim `zkouska` nic nenahrává.
+  spouští ho majitel (v GitHubu, nebo v simulátoru: panel Úprava kloubů → Vydání; `api.php` pustí ostré nasazení jen po prošlé
+  zkoušce téhož commitu, workflow pak web živě ověří); výchozí režim `zkouska` nic nenahrává. Tlačítko Nová revize u prošlého
+  přepočtu v aplikaci je také pokyn majitele.
 - **Hesla nikdy do Gitu.** `web/soukrome/tajne.php` vzniká až ve workflow ze secretu `ROBOT_HESLO`.
 - Web je soukromý: heslo, `noindex`, `robots.txt` se zákazem. Tuto ochranu neoslabovat.
 - Humanoid obsahem nesouvisí s Kliphausem ani Caribhausem. Nesahat na jejich složky, DNS ani kořenový `.htaccess`.

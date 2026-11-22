@@ -172,11 +172,32 @@ async function r14List(force){const box=$('r14Remote');if(!r14Csrf){box.innerHTM
  const L=d.prepocty||[];if(!L.length){box.innerHTML='<p class="r14-note">Zatím žádný přepočet.</p>';return}
  const stav=p=>p.stav!=='completed'?(p.stav==='ceka'?'čeká na spuštění':'počítá se…'):p.vysledek?(p.vysledek.proslo?'<b class="r14-ok">prošlo</b>':'<b class="r14-bad">neprošlo</b>'):(p.zaver==='success'?'hotovo':'<b class="r14-bad">chyba běhu</b>');
  box.innerHTML='<table class="r14-t"><thead><tr><th>Přepočet</th><th>Stav</th></tr></thead><tbody>'+L.map((p,i)=>{const v=p.vysledek,kl=Object.values(p.upravy||{}).map(e=>r14Esc(e.kloub)).join(', ');
-  const det=v?('<br>servo max '+fmt(100*(v.statika.max||0),1)+' % · mezera '+fmt(v.mezery.dily_mm,1)+' mm · schod '+fmt(v.mezery.schod_mm,1)+' mm'+(v.kontroly.filter(k=>!k.ok).map(k=>'<br><span class="r14-bad">✗ '+r14Esc(k.nazev)+': '+r14Esc(k.hodnota)+'</span>').join(''))+((v.varovani||[]).map(t=>'<br><span class="r14-warn">⚠ '+r14Esc(t)+'</span>').join(''))+(v.proslo&&!p.rychle?'<br><span class="r14-ok">Z přepočtu jde udělat novou revizi: GitHub → Actions → Nová revize, označení <b>'+r14Esc(p.id)+'</b>.</span>':'')):'';
+  const det=v?('<br>servo max '+fmt(100*(v.statika.max||0),1)+' % · mezera '+fmt(v.mezery.dily_mm,1)+' mm · schod '+fmt(v.mezery.schod_mm,1)+' mm'+(v.kontroly.filter(k=>!k.ok).map(k=>'<br><span class="r14-bad">✗ '+r14Esc(k.nazev)+': '+r14Esc(k.hodnota)+'</span>').join(''))+((v.varovani||[]).map(t=>'<br><span class="r14-warn">⚠ '+r14Esc(t)+'</span>').join(''))+(v.proslo&&!p.rychle?'<br><button class="r14-link" data-rev="'+r14Esc(p.id)+'">Udělat z úpravy novou revizi</button>':'')):'';
   return '<tr><th>'+new Date(p.cas*1000).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})+(p.rychle?' · rychlá':'')+'<br><span class="r14-note">'+kl+'</span></th><td>'+stav(p)+det+
    '<br><button class="r14-link" data-load="'+i+'">Načíst úpravu</button>'+(p.odkaz?' · <a href="'+r14Esc(p.odkaz)+'" target="_blank" rel="noopener">protokol a stránka návrhu</a>':'')+'</td></tr>'}).join('')+'</tbody></table>';
  for(const b of box.querySelectorAll('[data-load]'))b.onclick=()=>{const p=L[+b.dataset.load];$('r14Json').value=JSON.stringify({upravy:p.upravy});r14Import()};
+ for(const b of box.querySelectorAll('[data-rev]'))b.onclick=()=>r14Confirm(b,'Opravdu udělat novou revizi? Klikni znovu.',async()=>{try{await r14Api('revize',{id:b.dataset.rev});b.replaceWith(Object.assign(document.createElement('span'),{className:'r14-ok',textContent:'Nová revize se počítá (asi 15–25 min), stav je v části Vydání.'}));r14Release(true)}catch(err){b.textContent='Nepodařilo se: '+err.message}});
  clearTimeout(r14PollT);if(L.some(p=>p.stav!=='completed'))r14PollT=setTimeout(()=>r14List(),20000)}
+// ---------- vydání: nová revize a nasazení z aplikace ----------
+let r14RelT=null,r14Rel=null;
+function r14Confirm(btn,ask,go){if(btn.dataset.ask){delete btn.dataset.ask;clearTimeout(+btn.dataset.t);btn.disabled=true;go().finally(()=>{btn.disabled=false});return}
+ const old=btn.textContent;btn.dataset.ask='1';btn.textContent=ask;btn.dataset.t=String(setTimeout(()=>{delete btn.dataset.ask;btn.textContent=old},6000))}
+async function r14Release(force){const box=$('r14Release');if(!box)return;if(!r14Csrf){box.innerHTML='<p class="r14-note">Nasazovat jde jen ze simulátoru na robot.caribhaus.com po přihlášení.</p>';return}
+ if(!force&&!r14Open)return;let d;try{d=await r14Api('vydani')}catch(err){box.innerHTML='<p class="r14-stale">'+r14Esc(err.message)+'</p>';return}r14Rel=d;
+ const t=x=>x?new Date(x*1000).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'}):'—',sh=c=>(c||'').slice(0,7);
+ const st=b=>b.stav!=='completed'?'běží…':b.zaver==='success'?'<b class="r14-ok">v pořádku</b>':'<b class="r14-bad">chyba</b>';
+ const ma=d.main||{},na=d.nasazeno,zk=d.zkouska,stejne=na&&na.commit===ma.commit,bezi=(d.bezi||[]).length>0,zkOk=zk&&zk.zaver==='success'&&zk.stav==='completed';
+ let h='<div class="r14-facts"><div><span>Verze v GitHubu</span><b>'+sh(ma.commit)+' · '+t(ma.cas)+'</b></div><div><span>Na serveru</span><b>'+(na?sh(na.commit)+' · '+t(na.cas):'—')+'</b></div></div>';
+ h+='<p class="r14-note">'+r14Esc(ma.zprava||'')+'</p><p class="'+(stejne?'r14-ok':'r14-warn')+'">'+(stejne?'Na serveru je aktuální verze.':'Nová verze čeká na nasazení.')+'</p>';
+ if(bezi)h+='<p class="r14-warn">Nasazení právě běží…</p>';
+ h+='<div class="r14-btns"><button id="r14ZkBtn"'+(bezi?' disabled':'')+'>1. Zkouška nasazení</button><button class="primary" id="r14NasBtn"'+(bezi||!zkOk?' disabled':'')+'>2. Nasadit na server</button></div>';
+ h+='<p class="r14-hint">Zkouška nic nenahrává, jen ověří, co by se nahrálo. Nasadit jde až po prošlé zkoušce téže verze; po nahrání se web sám ověří (heslo, noindex, zákazy). Pak stránku načti znovu.'+(zk?' Zkouška této verze: '+st(zk)+'.':'')+'</p>';
+ const L=[...(d.nasazeni||[]).map(b=>({...b,typ:b.nazev.includes('nasazeni')?'nasazení':'zkouška'})),...(d.revize||[]).map(b=>({...b,typ:'nová revize'}))].sort((a,b)=>b.cas-a.cas).slice(0,6);
+ if(L.length)h+='<table class="r14-t"><thead><tr><th>Poslední běhy</th><th>Stav</th></tr></thead><tbody>'+L.map(b=>'<tr><th>'+t(b.cas)+' · '+b.typ+'<br><span class="r14-note">'+sh(b.commit)+'</span></th><td>'+st(b)+' · <a href="'+r14Esc(b.odkaz)+'" target="_blank" rel="noopener">podrobnosti</a></td></tr>').join('')+'</tbody></table>';
+ box.innerHTML=h;
+ $('r14ZkBtn').onclick=async()=>{$('r14ZkBtn').disabled=true;try{await r14Api('nasadit',{rezim:'zkouska'});setTimeout(()=>r14Release(true),4000)}catch(err){box.insertAdjacentHTML('beforeend','<p class="r14-bad">'+r14Esc(err.message)+'</p>')}};
+ $('r14NasBtn').onclick=()=>r14Confirm($('r14NasBtn'),'Opravdu nahrát verzi '+sh(ma.commit)+' na server? Klikni znovu.',async()=>{try{await r14Api('nasadit',{rezim:'nasazeni',commit:ma.commit});setTimeout(()=>r14Release(true),4000)}catch(err){box.insertAdjacentHTML('beforeend','<p class="r14-bad">'+r14Esc(err.message)+'</p>')}});
+ clearTimeout(r14RelT);if(bezi||L.some(b=>b.stav!=='completed'))r14RelT=setTimeout(()=>r14Release(),15000)}
 // ---------- wiring ----------
 for(let k=0;k<22;k++)$('r14Joint').add(new Option(data.joints[k],k));$('r14Joint').value=String(r14Sel);
 const r14Pick=()=>{side=r14Sel;$('joint').value=String(side)};
@@ -187,7 +208,7 @@ $('r14Carry').onchange=()=>r14Set(r14Sel,{carry:$('r14Carry').checked});
 $('r14ResetJoint').onclick=()=>r14Set(r14Sel,{d:[0,0,0],rot:0,carry:false});
 $('r14ResetAll').onclick=()=>{r14Edits={};r14Ver++;r14Result=null;stop();r14Controls();render()};
 $('r14RunBtn').onclick=r14Run;$('r14SendBtn').onclick=r14Send;$('r14ExportBtn').onclick=r14Export;$('r14ImportBtn').onclick=r14Import;
-$('r14Toggle').onclick=()=>{r14Open=!r14Open;$('r14').classList.toggle('open',r14Open);if(r14Open)r14List(true);$('r14Toggle').setAttribute('aria-expanded',String(r14Open));r14Controls();render(true)};
+$('r14Toggle').onclick=()=>{r14Open=!r14Open;$('r14').classList.toggle('open',r14Open);if(r14Open){r14List(true);r14Release(true)}$('r14Toggle').setAttribute('aria-expanded',String(r14Open));r14Controls();render(true)};
 $('r8Assembly').addEventListener('change',()=>setTimeout(r14Controls,0));
 r14Ready=true;
 // Revize z automatického přepočtu: stránka se otevře s úpravou, ze které vznikla

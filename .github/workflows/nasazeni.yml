@@ -1,6 +1,8 @@
 name: Nasazení na Hetzner
+run-name: Nasazení · ${{ inputs.rezim }}
 
-# Spouští jen majitel ručně: Actions → Nasazení na Hetzner → Run workflow.
+# Spouští jen majitel: ručně Actions → Nasazení na Hetzner → Run workflow, nebo v simulátoru (panel Úprava kloubů → Vydání,
+# po přihlášení; ostré nasazení až po prošlé zkoušce téhož commitu – hlídá api.php).
 # Režim „zkouska“ nic nenahrává, jen vypíše, co by se nahrálo. Nic se nenasazuje samo.
 #
 # Secrets:   FTP_USERNAME, FTP_PASSWORD (FTP účet omezený jen na složku humanoida), ROBOT_HESLO (heslo do simulátoru, min. 10 znaků),
@@ -75,7 +77,20 @@ jobs:
           lftp --env-password -u "$FTP_USERNAME" "$FTP_SERVER" -e "
             set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate true;
             set net:max-retries 3; set net:timeout 30; set cmd:fail-exit true;
-            mirror -R $ZK --verbose --no-perms --exclude-glob soukrome/relace/ --exclude-glob soukrome/pokusy.json --exclude-glob soukrome/prepocty.json web/ $FTP_SERVER_DIR;
+            mirror -R $ZK --verbose --no-perms --exclude-glob soukrome/relace/ --exclude-glob soukrome/pokusy.json --exclude-glob soukrome/prepocty.json --exclude-glob soukrome/vydani.json web/ $FTP_SERVER_DIR;
             bye"
+      - name: Živé ověření
+        if: inputs.rezim == 'nasazeni'
+        env:
+          URL: ${{ vars.ROBOT_URL || 'https://robot.caribhaus.com' }}
+        run: |
+          sleep 5; chyba=0
+          kod(){ curl -s -o /tmp/telo -w '%{http_code}' --max-time 30 "$URL$1"; }
+          k=$(kod /); grep -q noindex /tmp/telo && grep -q 'type="password"' /tmp/telo && [ "$k" = 200 ] || { echo "::error::Přihlašovací stránka ($k) bez hesla nebo noindex"; chyba=1; }
+          for u in /app/emil-h22.html /soukrome/tajne.php /soukrome/jadro.php; do k=$(kod $u); [ "$k" = 403 ] || { echo "::error::$u vrací $k místo 403"; chyba=1; }; done
+          k=$(kod /api.php); [ "$k" = 401 ] || { echo "::error::api.php vrací $k místo 401"; chyba=1; }
+          k=$(kod /robots.txt); grep -q 'Disallow: /' /tmp/telo || { echo "::error::robots.txt bez zákazu"; chyba=1; }
+          echo "Živé ověření: $([ $chyba = 0 ] && echo v pořádku || echo CHYBA) (přihlášení, noindex, zákazy složek, api 401, robots)" >> "$GITHUB_STEP_SUMMARY"
+          exit $chyba
       - name: Souhrn
         run: echo "Režim ${{ inputs.rezim }} · commit ${GITHUB_SHA::7} · cíl $FTP_SERVER$FTP_SERVER_DIR" >> "$GITHUB_STEP_SUMMARY"

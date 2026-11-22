@@ -30,6 +30,11 @@ Záznam `A` (a `AAAA`) pro `robot` na stejné adresy, jaké má `harmonie`. Nic 
 Actions → **Nasazení na Hetzner** → Run workflow → `zkouska`. Zkontrolovat výpis, pak znovu s `nasazeni`.
 Na serveru se nic nemaže, jen nahrává. Změna hesla = změnit `ROBOT_HESLO` a nasadit znovu.
 
+**Z aplikace:** simulátor → tlačítko Úprava kloubů → oddíl **Vydání**: *1. Zkouška nasazení* (nic nenahrává), po jejím úspěchu
+*2. Nasadit na server* (dvojí potvrzení). `api.php` ostré nasazení nepustí bez prošlé zkoušky téhož commitu ani když už nasazení běží;
+workflow po nahrání web sám ověří (přihlášení, noindex, 403 u `app/` a `soukrome/`, 401 u `api.php`, robots). Používá stejný token
+`PREPOCET_TOKEN` (Actions: read and write). U prošlého plného přepočtu je tlačítko *Udělat z úpravy novou revizi* (workflow Nová revize).
+
 ## Proč to neovlivní caribhaus.com ani jiné weby
 
 - Vlastní složka, vlastní FTP účet (nedosáhne mimo ni), vlastní certifikát, jeden nový záznam v DNS.

@@ -79,4 +79,61 @@ if ($akce === 'seznam') {
     }
     odpoved(200, ['prepocty' => $out]);
 }
+// ---------- vydání: nová revize a nasazení přímo z aplikace (jen majitel po přihlášení) ----------
+function gh_behy(string $wf, string $token, int $n = 10): array {
+    [$kod, $body] = gh('GET', '/actions/workflows/' . $wf . '/runs?per_page=' . $n, $token);
+    if ($kod !== 200) { return []; }
+    return array_map(fn($r) => ['nazev' => (string) $r['display_title'], 'stav' => (string) $r['status'], 'zaver' => $r['conclusion'] ?? null,
+        'commit' => substr((string) $r['head_sha'], 0, 40), 'cas' => strtotime((string) $r['created_at']), 'odkaz' => (string) $r['html_url']],
+        json_decode($body, true)['workflow_runs'] ?? []);
+}
+function gh_main(string $token): array {
+    [$kod, $body] = gh('GET', '/commits/main', $token);
+    $c = $kod === 200 ? json_decode($body, true) : [];
+    return ['commit' => (string) ($c['sha'] ?? ''), 'zprava' => mb_substr(strtok((string) ($c['commit']['message'] ?? ''), "\n"), 0, 140), 'cas' => strtotime((string) ($c['commit']['committer']['date'] ?? '')) ?: null];
+}
+function posledni(array $behy, string $rezim, ?string $commit = null): ?array {
+    foreach ($behy as $b) { if (str_contains($b['nazev'], '· ' . $rezim) && ($commit === null || $b['commit'] === $commit)) { return $b; } }
+    return null;
+}
+
+if ($akce === 'vydani') {
+    $main = gh_main($token); $nas = gh_behy('nasazeni.yml', $token); $rev = gh_behy('nova-revize.yml', $token, 5);
+    $ostre = null; foreach ($nas as $b) { if (str_contains($b['nazev'], '· nasazeni') && $b['zaver'] === 'success') { $ostre = $b; break; } }
+    $zk = posledni($nas, 'zkouska', $main['commit']);
+    odpoved(200, ['main' => $main, 'nasazeno' => $ostre, 'zkouska' => $zk, 'bezi' => array_values(array_filter($nas, fn($b) => $b['stav'] !== 'completed')),
+        'nasazeni' => array_slice($nas, 0, 5), 'revize' => $rev]);
+}
+
+if (in_array($akce, ['nasadit', 'revize'], true) && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    $vstup = json_decode((string) file_get_contents('php://input'), true) ?: [];
+    $log = __DIR__ . '/soukrome/vydani.json'; $ev = evidence_nacti($log);
+    if (count(array_filter($ev, fn($r) => time() - (int) ($r['cas'] ?? 0) < 3600)) >= 12) { odpoved(429, ['chyba' => 'Za poslední hodinu už bylo spuštěno 12 akcí. Zkus to později.']); }
+    if ($akce === 'nasadit') {
+        $rezim = (string) ($vstup['rezim'] ?? '');
+        if (!in_array($rezim, ['zkouska', 'nasazeni'], true)) { odpoved(400, ['chyba' => 'Neznámý režim.']); }
+        $nas = gh_behy('nasazeni.yml', $token);
+        if (array_filter($nas, fn($b) => $b['stav'] !== 'completed')) { odpoved(409, ['chyba' => 'Nasazení už běží, počkej na dokončení.']); }
+        if ($rezim === 'nasazeni') {
+            // ostré nasazení jen po prošlé zkoušce téhož commitu (pravidlo: kontrola → zkouška → nasazení → ověření)
+            $main = gh_main($token); $zk = posledni($nas, 'zkouska', $main['commit']);
+            if (!$zk || $zk['zaver'] !== 'success') { odpoved(409, ['chyba' => 'Nejdřív musí projít zkouška nasazení pro aktuální verzi.']); }
+            if (($vstup['commit'] ?? '') !== $main['commit']) { odpoved(409, ['chyba' => 'Mezitím vznikla nová verze. Načti stav znovu a spusť zkoušku.']); }
+        }
+        [$kod] = gh('POST', '/actions/workflows/nasazeni.yml/dispatches', $token, ['ref' => 'main', 'inputs' => ['rezim' => $rezim]]);
+        if ($kod !== 204) { odpoved(502, ['chyba' => 'GitHub spuštění nepřijal (HTTP ' . $kod . ').']); }
+    } else {
+        $id = (string) ($vstup['id'] ?? '');
+        if (!preg_match('/^[A-Za-z0-9-]{4,40}$/', $id)) { odpoved(400, ['chyba' => 'Neplatné označení přepočtu.']); }
+        [$k2, $v] = gh('GET', '/contents/prepocty/' . rawurlencode($id) . '/vysledek.json?ref=prepocty', $token, null, 'application/vnd.github.raw+json');
+        $r = $k2 === 200 ? json_decode($v, true) : null;
+        if (!$r || empty($r['proslo']) || !empty($r['rychla'])) { odpoved(409, ['chyba' => 'Novou revizi jde udělat jen z prošlé plné kontroly.']); }
+        if (array_filter(gh_behy('nova-revize.yml', $token, 5), fn($b) => $b['stav'] !== 'completed')) { odpoved(409, ['chyba' => 'Nová revize už se počítá.']); }
+        [$kod] = gh('POST', '/actions/workflows/nova-revize.yml/dispatches', $token, ['ref' => 'main', 'inputs' => ['id' => $id]]);
+        if ($kod !== 204) { odpoved(502, ['chyba' => 'GitHub spuštění nepřijal (HTTP ' . $kod . ').']); }
+    }
+    array_unshift($ev, ['cas' => time(), 'akce' => $akce, 'rezim' => $vstup['rezim'] ?? null, 'id' => $vstup['id'] ?? null]);
+    @file_put_contents($log, json_encode(array_slice($ev, 0, 100), JSON_UNESCAPED_UNICODE), LOCK_EX);
+    odpoved(200, ['ok' => true]);
+}
 odpoved(400, ['chyba' => 'Neznámá akce.']);
