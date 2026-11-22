@@ -32,12 +32,18 @@ Na projektu pracuje střídavě Claude i GPT. Platí společná pravidla `ai-pro
 
 ## Sestavení stránky
 
-`python3 -I zdroj/uprava-kloubu/build_r14.py <vstupní R13.html> web/app/emil-h22.html` (cesty ke zdrojům ve
-skriptu jsou zatím natvrdo na `/home/claude/sim`). Vstupní R13 je na e2 v `ai-projekty/Humanoid/revize/H22/R13/`.
+`python3 -I zdroj/uprava-kloubu/build_r14.py <vstupní R13.html> web/app/emil-h22.html`. Vstupní R13 je na e2 v `ai-projekty/Humanoid/revize/H22/R13/`.
+
+## Přepočet úpravy
+
+Workflow *Přepočet úpravy* smí Claude/GPT spustit kdykoli (nic nenasazuje). Meze verdiktu jsou v `kontrola/prepocet.py`
+(`MEZE`); měnit je jen na pokyn majitele. `kontrola/r14engine.js` musí být shodný se `zdroj/uprava-kloubu/r14engine.js`.
+Po změně `zdroj/uprava-kloubu/*` znovu sestavit `web/app/emil-h22.html`.
 
 ## Příkazy
 
 ```
 bash .github/kontrola.sh      kontrola před commitem (stejná běží v GitHubu)
+python3 -I kontrola/prepocet.py <úprava.json> <výstup> [--rychle]   plná kontrola úpravy kloubů
 node testy/t_engine.js        výpočet sil v JS proti referenci z Pythonu (1141 poloh, shoda do 1e-4)
 ```

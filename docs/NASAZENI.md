@@ -23,6 +23,7 @@ Záznam `A` (a `AAAA`) pro `robot` na stejné adresy, jaké má `harmonie`. Nic 
 | `FTP_PASSWORD` | secret | jeho heslo |
 | `ROBOT_HESLO` | secret | heslo do simulátoru, aspoň 10 znaků |
 | `FTP_SERVER_DIR` | variable | nenastavovat, pokud je FTP účet omezený na složku (výchozí `/`) |
+| `PREPOCET_TOKEN` | secret | nepovinný – token pro tlačítko *Odeslat k přepočtu* (kap. 5) |
 
 ## 4. Nasazení
 
@@ -41,3 +42,19 @@ Na serveru se nic nemaže, jen nahrává. Změna hesla = změnit `ROBOT_HESLO` a
 Přihlášení heslem (`web/index.php`), 8 chybných pokusů za 15 minut z jedné adresy, přihlášení drží 14 dní.
 Hlavička `X-Robots-Tag: noindex`, meta robots, `robots.txt`. Složky `app/` a `soukrome/` nejsou z webu dostupné.
 Odhlášení: `https://robot.caribhaus.com/?odhlasit=1`.
+
+## 5. Automatický přepočet úpravy (tlačítko v simulátoru)
+
+Simulátor → *Úprava kloubů* → *Odeslat k přepočtu* spustí v GitHubu workflow **Přepočet úpravy**
+(`.github/workflows/prepocet.yml`): přizpůsobení přelezu 21 cm, statika při tření 0,5/0,4/0,3, přesné mezery ze sítí,
+dynamická simulace v šesti variantách a verdikt podle mezí (`MEZE` v `kontrola/prepocet.py`). **Nic nenasazuje.**
+Výsledek: artefakt běhu (stránka návrhu, protokol), souhrn běhu a soubory ve větvi `prepocty/<id>/`.
+Ručně lze spustit i z Actions (vstup = JSON exportu nebo cesta `upravy/<soubor>.json`).
+
+Token pro server (jednorázově):
+1. GitHub → Settings (účtu) → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token.
+2. Repository access: **Only select repositories → zajirA1/humanoid**. Expiration: např. 1 rok.
+3. Permissions → Repository: **Actions: Read and write**, **Contents: Read-only** (Metadata se doplní samo). Nic dalšího.
+4. Token uložit do `zajirA1/humanoid` → Settings → Secrets → Actions jako `PREPOCET_TOKEN`, pak spustit *Nasazení na Hetzner*.
+   Na serveru je jen v `soukrome/tajne.php` (z webu nedostupné). Kdo se přihlásí do simulátoru, může přepočet spustit,
+   omezení je 10 přepočtů za hodinu.
