@@ -2,8 +2,9 @@
 python3 -I kontrola/prepocet.py <upravy.json> <výstupní složka> [--rychle]"""
 import sys,os,json,gzip,math,subprocess,time,hashlib
 import numpy as np
-TU=os.path.dirname(os.path.abspath(__file__)); DATA=os.path.join(TU,'data')
+TU=os.path.dirname(os.path.abspath(__file__)); DATA=os.path.join(TU,'data'); sys.path.insert(0,TU)
 MEZE=dict(max_vyuziti=0.85,mezera_dilu_mm=9.0,odstup_schod_mm=3.0,posun_opory_mm=0.5)
+CIL_DOLADENI=9.5   # doladění volných končetin míří s rezervou 0,5 mm nad mez
 M=json.load(open(os.path.join(DATA,'model.json')))
 PAR=M['PAR']; AX=np.array(M['AX'],float); JN=M['JN']; LIM=np.array(M['LIM']); HZ=M['hz']; STEP=M['step_h']
 def rot(axis,ang,pt):
@@ -150,11 +151,33 @@ def main():
     fin=[s for s in s50 if s is not None]; pk=max(fin) if fin else None; pki=s50.index(pk) if fin else None
     drift=max(f['drift'] for f in F); shift=max(f['shift'] for f in F)
     G,pairs=nacti_geometrii(ed); log('geometrie',len(G),'skupin,',len(pairs),'dvojic')
-    selfd=[];envd=[];sp=[];ek=[]
     krok=3 if rychle else 1
-    for i in range(0,n,krok):
-        w=fk(F[i]['q'],F[i]['rt'],P,E); d,bp,e,k=mezery(G,pairs,w,M['ex'][i]); selfd.append((d,i,bp)); envd.append((e,i,k))
-        if i%200==0: log('mezery',i,'/',n)
+    def projdi():
+        sd=[];en=[]
+        for i in range(0,n,krok):
+            w=fk(F[i]['q'],F[i]['rt'],P,E); d,bp,e,k=mezery(G,pairs,w,M['ex'][i]); sd.append((d,i,bp)); en.append((e,i,k))
+        return sd,en
+    selfd,envd=projdi(); log('mezery po přizpůsobení',round(min(x[0] for x in selfd),2),round(min(x[0] for x in envd),2))
+    # doladění volných končetin v polohách pod cílem (až 3 kola), pak znovu statika ze stejného jádra
+    import doladeni
+    zasahy=[]; q_puv=[list(f['q']) for f in F]
+    for kolo in range(3):
+        if min(x[0] for x in selfd)>=CIL_DOLADENI: break
+        z=doladeni.dolad(F,M,P,E,G,pairs,fk,selfd,CIL_DOLADENI,STEP,log=log,cil_env=MEZE['odstup_schod_mm']+0.5)
+        if not z: break
+        zasahy+=z; selfd,envd=projdi(); log('kolo',kolo+1,'mezery',round(min(x[0] for x in selfd),2),round(min(x[0] for x in envd),2))
+    if zasahy:
+        fix=dict(q=[f['q'] for f in F],rt=[f['rt'] for f in F],drift=[f['drift'] for f in F],shift=[f['shift'] for f in F])
+        fp=os.path.join(outdir,'_polohy.json'); json.dump(fix,open(fp,'w'))
+        subprocess.run(['node',os.path.join(TU,'prizpusob.js'),os.path.join(DATA,'model.json'),src,tmp,fp],check=True)
+        F=json.load(open(tmp))['frames']; os.remove(tmp); os.remove(fp)
+        s50=[f['s50'] for f in F]; bad=[i for i,s in enumerate(s50) if s is None]
+        bad4=[i for i,f in enumerate(F) if f['s40'] is None]; bad3=[i for i,f in enumerate(F) if f['s30'] is None]
+        fin=[s for s in s50 if s is not None]; pk=max(fin) if fin else None; pki=s50.index(pk) if fin else None
+        log('statika po doladění',pk)
+    doladeno=sorted(set(i for z in zasahy for i in range(z['od'],z['do']+1))); dq_max=0.0
+    if zasahy:
+        dq_max=float(max(abs(np.array(F[i]['q'])-np.array(q_puv[i])).max() for i in range(n)))
     smin=min(selfd,key=lambda x:x[0]); emin=min(envd,key=lambda x:x[0])
     below10=sum(1 for x in selfd if x[0]<10)*krok; below5=sum(1 for x in envd if x[0]<5)*krok
     log('mezery hotové',round(smin[0],2),round(emin[0],2))
@@ -183,10 +206,12 @@ def main():
       ('Dynamická simulace doběhne (nominální)',dyn.get('nominal',{}).get('uspech',False),'—' if 'odchylka_konec_mm' not in dyn.get('nominal',{}) else f'odchylka na konci {dyn["nominal"]["odchylka_konec_mm"]:.1f} mm'),
     ]
     proslo=all(k[1] for k in kontroly)
-    R=dict(verze_kontroly=1,proslo=proslo,rychla=rychle,meze=MEZE,upravy=U.get('upravy',{}),kontroly=[dict(nazev=a,ok=bool(b),hodnota=c) for a,b,c in kontroly],
+    varovani=[f'Dynamická simulace ve variantě „{k}“ nedoběhla (robot se odchýlil o {v.get("odchylka_konec_mm",0):.0f} mm). Výchozí R13 ji zvládá – přelez je v této situaci na hraně.' for k,v in dyn.items() if k!='nominal' and not v.get('uspech',True)]
+    R=dict(verze_kontroly=2,proslo=proslo,varovani=varovani,rychla=rychle,meze=MEZE,upravy=U.get('upravy',{}),kontroly=[dict(nazev=a,ok=bool(b),hodnota=c) for a,b,c in kontroly],
       statika=dict(max=pk,max_s=None if pki is None else pki/HZ,max_kloub=None if pki is None else JN[F[pki]['j50']],vychozi_max=max(x for x in ref['s50'] if x is not None),bez_rovnovahy=bad[:50],posun_trupu_mm=shift,posun_opory_mm=drift),
       mezery=dict(dily_mm=smin[0],dily_s=smin[1]/HZ,dily_par=[f'L{a[0]} {a[1]}' for a in (smin[2] or [])],pod_10mm=below10,schod_mm=emin[0],schod_s=emin[1]/HZ,schod_dil=None if not emin[2] else f'L{emin[2][0]} {emin[2][1]}',pod_5mm=below5,
         vychozi_dily_mm=min(x for x in ref['self'] if x is not None),vychozi_schod_mm=min(x for x in ref['env'] if x is not None)),
+      doladeni=dict(polohy=len(doladeno),useky=zasahy,max_zmena_deg=dq_max,cil_mm=CIL_DOLADENI),
       dynamika=dyn,mezery_v_simulaci=simclr,cas_s=round(time.time()-t0),polohy=n,
       hash_upravy=hashlib.sha256(json.dumps(U.get('upravy',{}),sort_keys=True).encode()).hexdigest()[:12])
     json.dump(R,open(os.path.join(outdir,'vysledek.json'),'w'),ensure_ascii=False,indent=1)
@@ -197,16 +222,18 @@ def main():
         md.append(f'- {JN[int(j)]}: posun {e.get("posun_mm")} mm' + (', nese další díly' if e.get('nese_dalsi_dily') else '') + f' – podél osy kloubu {al:.1f} mm, napříč {pe:.1f} mm')
         if al>1 and pe<1 and not e.get('nese_dalsi_dily'): md.append(f'  - ⚠️ Posun vede jen podél osy: pohyb a síly se téměř nemění, mění se poloha a hmotnost serva a vidlice se musí prodloužit o {al:.0f} mm.')
     md+=['','## Kontroly','','| Kontrola | Výsledek | Hodnota |','|---|---|---|']+[f'| {a} | {"✅" if b else "❌"} | {c} |' for a,b,c in kontroly]
+    if varovani: md+=['','## ⚠️ Varování (verdikt neovlivňují)','']+[f'- {v}' for v in varovani]
     md+=['','## Srovnání s výchozím R13','','| | R13 | Po úpravě |','|---|---|---|',
       f'| Nejvyšší využití serva (tření 0,5) | {R["statika"]["vychozi_max"]*100:.1f} % | {"—" if pk is None else f"{pk*100:.1f} %"} |',
       f'| Nejmenší mezera mezi díly | {R["mezery"]["vychozi_dily_mm"]:.2f} mm | {smin[0]:.2f} mm |',
       f'| Polohy s mezerou pod 10 mm | {sum(1 for x in ref["self"] if x is not None and x<10)} | {below10} |',
       f'| Nejmenší odstup od schodu | {R["mezery"]["vychozi_schod_mm"]:.2f} mm | {emin[0]:.2f} mm |',
-      f'| Největší posun trupu oproti R13 | 0 mm | {shift:.1f} mm |','','## Dynamická simulace','','| Varianta | Doběhne | Odchylka na konci | Špička momentu |','|---|---|---|---|']
+      f'| Největší posun trupu oproti R13 | 0 mm | {shift:.1f} mm |','','## Doladění volných končetin','',
+      (f'Doladěné úseky švihu: {len(zasahy)} ({len(doladeno)} poloh), klouby volné končetiny pootočeny nejvýš o {dq_max:.1f}° s plynulým náběhem; cíl {CIL_DOLADENI} mm. Opory a trup beze změny.' if zasahy else 'Nebylo potřeba.'),*[f'- {z["koncetina"].replace("_"," ")} {z["od"]/HZ:.1f}–{z["do"]/HZ:.1f} s: nejtěsnější místo úseku {z["pred"]-CIL_DOLADENI:+.2f} mm vůči cíli → ' + (f'{z["po"]-CIL_DOLADENI:+.2f} mm' if z["po"]<CIL_DOLADENI+0.79 else 'aspoň +0,8 mm') + f', změna úhlů {z["zmena"]}°' for z in zasahy],'','## Dynamická simulace','','| Varianta | Doběhne | Odchylka na konci | Špička momentu |','|---|---|---|---|']
     for k,v in dyn.items():
         md.append(f'| {k} | {"✅" if v.get("uspech") else "❌"} | {v.get("odchylka_konec_mm",float("nan")):.1f} mm | {v.get("moment_max",float("nan"))*100:.0f} % ({v.get("moment_kloub","")}), na mezi {v.get("na_mezi",0)*100:.1f} % času |' if 'odchylka_konec_mm' in v else f'| {k} | ❌ | {v.get("poznamka","")} | |')
     if simclr: md+=['',f'Mezery v simulovaném pohybu: díly {simclr["mezera_dilu_mm"]:.1f} mm, schod {simclr["odstup_schod_mm"]:.1f} mm (informativní).']
-    md+=['','## Co tato kontrola nedělá','','- Pohyb se jen přizpůsobí nové geometrii (opory na místě, trup a volné končetiny ustoupí); znovu se neladí.',
+    md+=['','## Co tato kontrola nedělá','','- Pohyb se přizpůsobí nové geometrii a doladí se jen švih volných končetin; trup ani rozložení sil se znovu neoptimalizují.',
       '- Rámy a vidlice v modelu se nepřekreslují – posouvá se servo a osa. Střet serva s vlastním rámem se nekontroluje.',
       '- Chůze, sed a další pohyby se v této kontrole nepočítají (přepočítá je simulátor v prohlížeči).',
       '- Dynamika je předkorigovaná podle statiky (jako u R13); bez předkorekce R13 nedoběhne. Krátké špičky na mezi serva má i výchozí R13.','- Fyzicky nic neověřeno.']
