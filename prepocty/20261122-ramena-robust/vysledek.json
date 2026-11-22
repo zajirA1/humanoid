@@ -1,0 +1,320 @@
+{
+ "verze_kontroly": 3,
+ "robustnost": {
+  "slabych": 240,
+  "slabych_R13": 239,
+  "rezerva_min": 5.510855058173526,
+  "rezerva_min_R13": 5.383,
+  "predzatizeni_min": 0.0,
+  "predzatizeni_min_R13": 0.0,
+  "useky": [
+   {
+    "od": 14.333333333333334,
+    "do": 15.5,
+    "rezerva": 11.037110417886609,
+    "predzatizeni": 3.1985522835979627,
+    "opora": "L dlaň"
+   },
+   {
+    "od": 16.666666666666668,
+    "do": 30.0,
+    "rezerva": 12.155086350028864,
+    "predzatizeni": 0.0,
+    "opora": "P dlaň"
+   },
+   {
+    "od": 35.333333333333336,
+    "do": 35.666666666666664,
+    "rezerva": 26.5670390595238,
+    "predzatizeni": 4.539921205739772,
+    "opora": "P dlaň"
+   },
+   {
+    "od": 39.833333333333336,
+    "do": 44.333333333333336,
+    "rezerva": 10.289704091564397,
+    "predzatizeni": 2.947480150869896,
+    "opora": "P dlaň"
+   },
+   {
+    "od": 47.166666666666664,
+    "do": 54.5,
+    "rezerva": 5.510855058173526,
+    "predzatizeni": 1.6617702232542353,
+    "opora": "L dlaň"
+   },
+   {
+    "od": 69.83333333333333,
+    "do": 71.66666666666667,
+    "rezerva": 16.763281633696664,
+    "predzatizeni": 4.062604530468991,
+    "opora": "L holeň"
+   },
+   {
+    "od": 77.33333333333333,
+    "do": 78.16666666666667,
+    "rezerva": 14.303506475063195,
+    "predzatizeni": 4.058362975590165,
+    "opora": "L dlaň"
+   },
+   {
+    "od": 82.5,
+    "do": 86.83333333333333,
+    "rezerva": 9.45793378165817,
+    "predzatizeni": 2.089995127967001,
+    "opora": "P dlaň"
+   },
+   {
+    "od": 91.33333333333333,
+    "do": 92.16666666666667,
+    "rezerva": 9.584165440370185,
+    "predzatizeni": 2.8786449126276183,
+    "opora": "L dlaň"
+   },
+   {
+    "od": 97.16666666666667,
+    "do": 100.83333333333333,
+    "rezerva": 57.86479963565604,
+    "predzatizeni": 2.8021324070796774,
+    "opora": "P dlaň"
+   },
+   {
+    "od": 130.66666666666666,
+    "do": 133.0,
+    "rezerva": 36.288723082785594,
+    "predzatizeni": 3.063883074059984,
+    "opora": "P dlaň"
+   }
+  ]
+ },
+ "proslo": false,
+ "varovani": [
+  "Dynamická simulace ve variantě „schod 218 mm“ nedoběhla (robot se odchýlil o 848 mm). Nezvládá ji ani výchozí R13 – slabina přelezu, ne úpravy."
+ ],
+ "rychla": false,
+ "meze": {
+  "max_vyuziti": 0.85,
+  "mezera_dilu_mm": 9.0,
+  "odstup_schod_mm": 3.0,
+  "posun_opory_mm": 0.5
+ },
+ "upravy": {
+  "8": {
+   "kloub": "Rameno · předozadní pohyb · L",
+   "posun_mm": [
+    -40.0,
+    5.5,
+    4.5
+   ],
+   "nese_dalsi_dily": false,
+   "natoceni_serva_deg": 0.0
+  },
+  "18": {
+   "kloub": "Rameno · předozadní pohyb · P",
+   "posun_mm": [
+    40.0,
+    5.5,
+    4.5
+   ],
+   "nese_dalsi_dily": false,
+   "natoceni_serva_deg": 0.0
+  }
+ },
+ "kontroly": [
+  {
+   "nazev": "Rovnováha ve všech polohách (tření 0,5 / 0,4 / 0,3)",
+   "ok": true,
+   "hodnota": "bez rovnováhy 0 / 0 / 0 z 1141"
+  },
+  {
+   "nazev": "Nejvyšší využití serva ≤ 85 %",
+   "ok": true,
+   "hodnota": "71.1 % (Kyčel · předozadní pohyb · P, 166.2 s)"
+  },
+  {
+   "nazev": "Mezera mezi díly ≥ 9 mm",
+   "ok": true,
+   "hodnota": "9.26 mm (156.0 s)"
+  },
+  {
+   "nazev": "Odstup od podlahy a schodu ≥ 3 mm",
+   "ok": true,
+   "hodnota": "3.27 mm (68.5 s)"
+  },
+  {
+   "nazev": "Opory zůstávají na místě (≤ 0.5 mm)",
+   "ok": true,
+   "hodnota": "0.009 mm"
+  },
+  {
+   "nazev": "Dynamická simulace doběhne (nominální)",
+   "ok": true,
+   "hodnota": "odchylka na konci 8.0 mm"
+  },
+  {
+   "nazev": "Schod o ±5 mm jiný (205 a 215 mm) – dynamika doběhne",
+   "ok": false,
+   "hodnota": "205 mm: OK, 215 mm: pád"
+  }
+ ],
+ "statika": {
+  "max": 0.71067,
+  "max_s": 166.16666666666666,
+  "max_kloub": "Kyčel · předozadní pohyb · P",
+  "vychozi_max": 0.70278,
+  "bez_rovnovahy": [],
+  "posun_trupu_mm": 2.31121,
+  "posun_opory_mm": 0.0094
+ },
+ "mezery": {
+  "dily_mm": 9.2603970089229,
+  "dily_s": 156.0,
+  "dily_par": [
+   "L22 body",
+   "L4 body"
+  ],
+  "pod_10mm": 41,
+  "schod_mm": 3.2668541108390983,
+  "schod_s": 68.5,
+  "schod_dil": "L17 body",
+  "pod_5mm": 5,
+  "vychozi_dily_mm": 9.22,
+  "vychozi_schod_mm": 3.262
+ },
+ "doladeni": {
+  "polohy": 42,
+  "useky": [
+   {
+    "koncetina": "L_noha",
+    "od": 735,
+    "do": 752,
+    "pred": 8.983171726657531,
+    "po": 10.3,
+    "zmena": [
+     0.0,
+     -0.0,
+     -0.0,
+     -0.59,
+     -0.0,
+     0.0
+    ]
+   },
+   {
+    "koncetina": "P_noha",
+    "od": 301,
+    "do": 324,
+    "pred": 9.186343606640412,
+    "po": 10.3,
+    "zmena": [
+     -0.0,
+     -1.97,
+     0.09,
+     0.0,
+     -0.0,
+     -0.0
+    ]
+   }
+  ],
+  "max_zmena_deg": 1.9734970000000018,
+  "cil_mm": 9.5
+ },
+ "dynamika": {
+  "nominal": {
+   "uspech": true,
+   "odchylka_konec_mm": 8.047081396904272,
+   "odchylka_max_mm": 14.492486055790259,
+   "naklon_konec_deg": 0.467279904390316,
+   "moment_max": 1.0000356900674543,
+   "moment_kloub": "Rameno · předozadní pohyb · P",
+   "pad_s": null,
+   "na_mezi": 0.006818652849740933
+  },
+  "schod 205 mm": {
+   "uspech": true,
+   "odchylka_konec_mm": 19.381024694972673,
+   "odchylka_max_mm": 25.455164203412103,
+   "naklon_konec_deg": 2.029782995400688,
+   "moment_max": 1.0000356900674543,
+   "moment_kloub": "Rameno · předozadní pohyb · L",
+   "pad_s": null,
+   "na_mezi": 0.03777720207253886
+  },
+  "schod 215 mm": {
+   "uspech": false,
+   "odchylka_konec_mm": 782.272402723938,
+   "odchylka_max_mm": 782.2725747708113,
+   "naklon_konec_deg": 140.86919091744718,
+   "moment_max": 1.0000356900674543,
+   "moment_kloub": "Kotník · boční náklon · P",
+   "pad_s": 26.053,
+   "na_mezi": 0.48554922279792745
+  },
+  "tření 0,35": {
+   "uspech": true,
+   "odchylka_konec_mm": 6.818391573545291,
+   "odchylka_max_mm": 13.666972874852327,
+   "naklon_konec_deg": 1.0188727341696775,
+   "moment_max": 1.0000356900674543,
+   "moment_kloub": "Rameno · předozadní pohyb · P",
+   "pad_s": null,
+   "na_mezi": 0.007393782383419689
+  },
+  "hmotnost +10 %": {
+   "uspech": true,
+   "odchylka_konec_mm": 8.714831493697991,
+   "odchylka_max_mm": 15.560832555039845,
+   "naklon_konec_deg": 0.7152679605343156,
+   "moment_max": 1.0000356900674543,
+   "moment_kloub": "Rameno · předozadní pohyb · P",
+   "pad_s": null,
+   "na_mezi": 0.013227979274611399
+  },
+  "o 5 mm blíž": {
+   "uspech": true,
+   "odchylka_konec_mm": 13.052882564846607,
+   "odchylka_max_mm": 18.915572036887518,
+   "naklon_konec_deg": 0.46375638843902384,
+   "moment_max": 1.0000356900674543,
+   "moment_kloub": "Rameno · předozadní pohyb · P",
+   "pad_s": null,
+   "na_mezi": 0.006818652849740933
+  },
+  "serva 85 %": {
+   "uspech": true,
+   "odchylka_konec_mm": 8.972840813826481,
+   "odchylka_max_mm": 15.528975783777469,
+   "naklon_konec_deg": 1.0121789030484125,
+   "moment_max": 1.0000416883981187,
+   "moment_kloub": "Rameno · předozadní pohyb · P",
+   "pad_s": null,
+   "na_mezi": 0.027082901554404144
+  },
+  "schod 202 mm": {
+   "uspech": true,
+   "odchylka_konec_mm": 22.842538129272825,
+   "odchylka_max_mm": 28.62393236626026,
+   "naklon_konec_deg": 2.6356751106917358,
+   "moment_max": 1.0000356900674543,
+   "moment_kloub": "Rameno · předozadní pohyb · L",
+   "pad_s": null,
+   "na_mezi": 0.06679274611398964
+  },
+  "schod 218 mm": {
+   "uspech": false,
+   "odchylka_konec_mm": 848.1022178022789,
+   "odchylka_max_mm": 848.1022178022789,
+   "naklon_konec_deg": 140.0364938414912,
+   "moment_max": 1.0000356900674543,
+   "moment_kloub": "Kotník · boční náklon · P",
+   "pad_s": 24.383,
+   "na_mezi": 0.4866683937823834
+  }
+ },
+ "mezery_v_simulaci": {
+  "mezera_dilu_mm": 9.36943349038344,
+  "odstup_schod_mm": -0.7634491097785769
+ },
+ "cas_s": 589,
+ "polohy": 1141,
+ "hash_upravy": "20b1302bc2b6"
+}
