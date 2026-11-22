@@ -75,3 +75,32 @@ Postup a nálezy:
    rozšířené doladění v kontrole dotáhlo jen na 2,37 mm (jedna společná změna úhlů pro celý dlouhý úsek nestačí).
    Proto `noha.py`: po polohách (16–33 s) pootočení kloubů levé nohy tak, aby koleno a holeň minuly hranu o ≥ 6 mm, vyhlazení
    v čase (σ 2 polohy), 2 průchody → odstup v celém pohybu 3,26 mm (stejně jako R13), mezery dílů 9,22 mm, změna nohy ≤ 10°.
+
+## Páté kolo (22. 11., večer) – regulace sil v oporách přes QP (NEPOMOHLA)
+
+Kód: `kontrola/qp_sily.py` (třída `SilyQP`, v simulaci `vyvazovani=dict(trida='SilyQP', …)`, potřebuje `pip install quadprog`),
+testy `qpt.py` (výšky, chyba měření `CHYBA`, jiný model `MODEL`), `statqp.py` (smyčka ve stojící poloze), `znamqp.py` (znaménko).
+Každých 20 ms: požadovaná výslednice (tíha + PD těžiště + PD náklonu) → QP rozdělí do bodů opor (tření 0,35, nezbytná opora ≥ 5 N)
+→ chyba sil po oporách → Δτ = −Jᵀ Δf → posun povelu serva Δq = Δτ / kp (polohová serva STS moment řídit neumějí), volitelně integrační složka.
+
+Výsledky (R15, plná dynamika):
+
+| Případ | Bez regulace | S QP |
+|---|---|---|
+| 210 mm (do 30 s) | doběhne | doběhne |
+| 218 mm, chyba měření −2 / +2 / −5 mm | doběhne | doběhne |
+| 222 mm | pád 25,2 s | pád 25,7 s (silnější zesílení: 23,4 s) |
+| 225 mm | pád 21,7 s | pád 24,4 s |
+| 198 mm | pád 133,3 s | pád 50,4 s (horší) |
+| 222 mm, přizpůsobení výšce už od 9 s (první dotyk dlaně) | pád 30,2 s | pád 30,9–32,4 s (6 nastavení) |
+
+Nálezy:
+1. Znaménko ověřeno, ale účinnost je malá: požadavek +5 N na dlaň přes Δq = −JᵀΔf/kp dá +0,5 N (opory tvoří uzavřený řetězec, tělo uhne).
+2. Ve stojící poloze s integrační složkou síly k požadovaným dojdou (pravá dlaň 4,0 → 6,7 N z 7,9 N), ale Δq roste až k 5°;
+   v pohybu integrační složka robota rozkmitá (222 mm: pád už ve 23,7 s).
+3. Pády nad 218 mm nejsou chybou rozdělení sil: na 222 mm se robot ve fázi 3 nakloní o 5–6° dozadu, těžiště uteče o 30–50 mm a pravá dlaň
+   ztratí kontakt (0 N, QP chce 5 N). Regulace sil polohu nevrátí; potřebná je změna pohybu (dřív přizpůsobit výšku, jiné rozložení
+   fáze 3/4), ne silnější regulace.
+4. Bonus: R15 s přesným přizpůsobením snese chybu měření výšky aspoň −5 až +2 mm na 218 mm i bez regulace.
+Závěr: QP regulace sil s polohovými servy v této podobě robustnost nezvýšila; kontrola ji nepoužívá. Rozumný další krok je skutečné
+řízení momentu (serva s proudovou/momentovou smyčkou) nebo přeplánování fáze 3–4 pro vyšší schod s přizpůsobením od prvního dotyku dlaně.

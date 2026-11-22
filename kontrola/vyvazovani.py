@@ -97,3 +97,9 @@ class ReflexDlani:
                 dq[J]=np.clip(x,-0.2,0.2)
         s.dq=0.8*s.dq+0.2*dq
         return s.dq
+
+# regulace sil přes QP (experimentální) – dostupná jako trida="SilyQP"
+try:
+    from qp_sily import SilyQP  # noqa: E402  (potřebuje balík quadprog)
+except ImportError:
+    pass
