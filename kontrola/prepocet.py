@@ -4,7 +4,8 @@ import sys,os,json,gzip,math,subprocess,time,hashlib
 import numpy as np
 TU=os.path.dirname(os.path.abspath(__file__)); DATA=os.path.join(TU,'data'); sys.path.insert(0,TU)
 MEZE=dict(max_vyuziti=0.85,mezera_dilu_mm=9.0,odstup_schod_mm=3.0,posun_opory_mm=0.5)
-CIL_DOLADENI=9.5   # doladění volných končetin míří s rezervou 0,5 mm nad mez
+CIL_DOLADENI=9.5
+ROBUST=dict(rezerva_mm=15.0,predzatizeni_N=5.0)   # slabé místo: rezerva těžiště nebo zatížení nezbytné opory pod touto hodnotou   # doladění volných končetin míří s rezervou 0,5 mm nad mez
 M=json.load(open(os.path.join(DATA,'model.json')))
 PAR=M['PAR']; AX=np.array(M['AX'],float); JN=M['JN']; LIM=np.array(M['LIM']); HZ=M['hz']; STEP=M['step_h']
 def rot(axis,ang,pt):
@@ -181,9 +182,24 @@ def main():
     smin=min(selfd,key=lambda x:x[0]); emin=min(envd,key=lambda x:x[0])
     below10=sum(1 for x in selfd if x[0]<10)*krok; below5=sum(1 for x in envd if x[0]<5)*krok
     log('mezery hotové',round(smin[0],2),round(emin[0],2))
+    import robustnost
+    rob=[robustnost.poloha(fk(F[i]['q'],F[i]['rt'],P,E),M['contacts'][i],links) for i in range(n)]
+    ref_rob=json.load(open(os.path.join(DATA,'vychozi-R13-robustnost.json')))
+    slab=lambda L:[i for i,o in enumerate(L) if o['marg']<ROBUST['rezerva_mm'] or o['fnez']<ROBUST['predzatizeni_N']]
+    sl=slab(rob); sl0=slab(ref_rob)
+    useky_sl=[]
+    for i in sl:
+        if useky_sl and i-useky_sl[-1][1]<=6: useky_sl[-1][1]=i
+        else: useky_sl.append([i,i])
+    robust_souhrn=dict(slabych=len(sl),slabych_R13=len(sl0),rezerva_min=min(o['marg'] for o in rob),rezerva_min_R13=min(o['marg'] for o in ref_rob),
+        predzatizeni_min=min(o['fnez'] for o in rob),predzatizeni_min_R13=min(o['fnez'] for o in ref_rob),
+        useky=[dict(od=a/HZ,do=b/HZ,rezerva=min(rob[i]['marg'] for i in range(a,b+1)),predzatizeni=min(rob[i]['fnez'] for i in range(a,b+1)),
+               opora=robustnost.JMENO.get(min((rob[i] for i in range(a,b+1)),key=lambda o:o['fnez'])['slaba'],'')) for a,b in useky_sl])
+    log('robustnost: slabých poloh',len(sl),'(R13',len(sl0),')')
     from scipy.ndimage import gaussian_filter1d
     ff=np.array([f['ff'] if f['ff'] else [0]*22 for f in F]); ff[:,[11,21]]=0; ff=gaussian_filter1d(ff,1.5,axis=0,mode='nearest')
-    varianty={'nominal':{},'tření 0,35':dict(mu=0.35),'hmotnost +10 %':dict(mass_scale=1.1),'schod 215 mm':dict(step_h=215.0),'o 5 mm blíž':dict(y_offset=-5.0),'serva 85 %':dict(lim_scale=0.85)}
+    varianty={'nominal':{},'schod 205 mm':dict(step_h=205.0),'schod 215 mm':dict(step_h=215.0),'tření 0,35':dict(mu=0.35),'hmotnost +10 %':dict(mass_scale=1.1),'o 5 mm blíž':dict(y_offset=-5.0),'serva 85 %':dict(lim_scale=0.85),'schod 202 mm':dict(step_h=202.0),'schod 218 mm':dict(step_h=218.0)}
+    POVINNE=('nominal','schod 205 mm','schod 215 mm')
     if rychle: varianty={'nominal':{}}
     dyn={}; simstates=None
     for name,kw in varianty.items():
@@ -204,10 +220,14 @@ def main():
       (f'Odstup od podlahy a schodu ≥ {MEZE["odstup_schod_mm"]:.0f} mm',emin[0]>=MEZE['odstup_schod_mm'],f'{emin[0]:.2f} mm ({emin[1]/HZ:.1f} s)'),
       (f'Opory zůstávají na místě (≤ {MEZE["posun_opory_mm"]} mm)',drift<=MEZE['posun_opory_mm'],f'{drift:.3f} mm'),
       ('Dynamická simulace doběhne (nominální)',dyn.get('nominal',{}).get('uspech',False),'—' if 'odchylka_konec_mm' not in dyn.get('nominal',{}) else f'odchylka na konci {dyn["nominal"]["odchylka_konec_mm"]:.1f} mm'),
+      ('Schod o ±5 mm jiný (205 a 215 mm) – dynamika doběhne',all(dyn.get(k,{}).get('uspech',False) for k in ('schod 205 mm','schod 215 mm')) or rychle,'rychlá kontrola – nepočítáno' if rychle else ', '.join(f'{k[6:]}: {"OK" if dyn.get(k,{}).get("uspech") else "pád"}' for k in ('schod 205 mm','schod 215 mm'))),
     ]
     proslo=all(k[1] for k in kontroly)
-    varovani=[f'Dynamická simulace ve variantě „{k}“ nedoběhla (robot se odchýlil o {v.get("odchylka_konec_mm",0):.0f} mm). Výchozí R13 ji zvládá – přelez je v této situaci na hraně.' for k,v in dyn.items() if k!='nominal' and not v.get('uspech',True)]
-    R=dict(verze_kontroly=2,proslo=proslo,varovani=varovani,rychla=rychle,meze=MEZE,upravy=U.get('upravy',{}),kontroly=[dict(nazev=a,ok=bool(b),hodnota=c) for a,b,c in kontroly],
+    r13dyn=json.load(open(os.path.join(DATA,'vychozi-R13-dynamika.json')))
+    varovani=[f'Dynamická simulace ve variantě „{k}“ nedoběhla (robot se odchýlil o {v.get("odchylka_konec_mm",0):.0f} mm). ' + ('Výchozí R13 ji zvládá – úprava rezervu zhoršila.' if r13dyn.get(k) else 'Nezvládá ji ani výchozí R13 – slabina přelezu, ne úpravy.') for k,v in dyn.items() if k not in POVINNE and not v.get('uspech',True)]
+    if robust_souhrn['slabych']>robust_souhrn['slabych_R13']+12 or robust_souhrn['rezerva_min']<robust_souhrn['rezerva_min_R13']-2 or robust_souhrn['predzatizeni_min']<robust_souhrn['predzatizeni_min_R13']-1:
+        varovani.append(f"Robustnost je horší než u R13: slabých poloh {robust_souhrn['slabych']} (R13 {robust_souhrn['slabych_R13']}), nejmenší rezerva těžiště {robust_souhrn['rezerva_min']:.1f} mm (R13 {robust_souhrn['rezerva_min_R13']:.1f}), nejmenší zatížení nezbytné opory {robust_souhrn['predzatizeni_min']:.1f} N (R13 {robust_souhrn['predzatizeni_min_R13']:.1f}).")
+    R=dict(verze_kontroly=3,robustnost=robust_souhrn,proslo=proslo,varovani=varovani,rychla=rychle,meze=MEZE,upravy=U.get('upravy',{}),kontroly=[dict(nazev=a,ok=bool(b),hodnota=c) for a,b,c in kontroly],
       statika=dict(max=pk,max_s=None if pki is None else pki/HZ,max_kloub=None if pki is None else JN[F[pki]['j50']],vychozi_max=max(x for x in ref['s50'] if x is not None),bez_rovnovahy=bad[:50],posun_trupu_mm=shift,posun_opory_mm=drift),
       mezery=dict(dily_mm=smin[0],dily_s=smin[1]/HZ,dily_par=[f'L{a[0]} {a[1]}' for a in (smin[2] or [])],pod_10mm=below10,schod_mm=emin[0],schod_s=emin[1]/HZ,schod_dil=None if not emin[2] else f'L{emin[2][0]} {emin[2][1]}',pod_5mm=below5,
         vychozi_dily_mm=min(x for x in ref['self'] if x is not None),vychozi_schod_mm=min(x for x in ref['env'] if x is not None)),
@@ -232,11 +252,15 @@ def main():
       (f'Doladěné úseky švihu: {len(zasahy)} ({len(doladeno)} poloh), klouby volné končetiny pootočeny nejvýš o {dq_max:.1f}° s plynulým náběhem; cíl {CIL_DOLADENI} mm. Opory a trup beze změny.' if zasahy else 'Nebylo potřeba.'),*[f'- {z["koncetina"].replace("_"," ")} {z["od"]/HZ:.1f}–{z["do"]/HZ:.1f} s: nejtěsnější místo úseku {z["pred"]-CIL_DOLADENI:+.2f} mm vůči cíli → ' + (f'{z["po"]-CIL_DOLADENI:+.2f} mm' if z["po"]<CIL_DOLADENI+0.79 else 'aspoň +0,8 mm') + f', změna úhlů {z["zmena"]}°' for z in zasahy],'','## Dynamická simulace','','| Varianta | Doběhne | Odchylka na konci | Špička momentu |','|---|---|---|---|']
     for k,v in dyn.items():
         md.append(f'| {k} | {"✅" if v.get("uspech") else "❌"} | {v.get("odchylka_konec_mm",float("nan")):.1f} mm | {v.get("moment_max",float("nan"))*100:.0f} % ({v.get("moment_kloub","")}), na mezi {v.get("na_mezi",0)*100:.1f} % času |' if 'odchylka_konec_mm' in v else f'| {k} | ❌ | {v.get("poznamka","")} | |')
+    md+=['','## Robustnost (rezerva těžiště a předzatížení opor)','',f'Slabé místo = rezerva těžiště pod {ROBUST["rezerva_mm"]:.0f} mm nebo opora, bez které by robot nestál, nese méně než {ROBUST["predzatizeni_N"]:.0f} N.','',
+      '| | R13 | Po úpravě |','|---|---|---|',f'| Slabých poloh | {robust_souhrn["slabych_R13"]} | {robust_souhrn["slabych"]} |',
+      f'| Nejmenší rezerva těžiště | {robust_souhrn["rezerva_min_R13"]:.1f} mm | {robust_souhrn["rezerva_min"]:.1f} mm |',f'| Nejmenší zatížení nezbytné opory | {robust_souhrn["predzatizeni_min_R13"]:.1f} N | {robust_souhrn["predzatizeni_min"]:.1f} N |','']
+    md+=[f'- {u["od"]:.1f}–{u["do"]:.1f} s: rezerva {u["rezerva"]:.1f} mm, nejslabší nezbytná opora {u["opora"]} {u["predzatizeni"]:.1f} N' for u in robust_souhrn['useky'] if u['do']-u['od']>=1.0]
     if simclr: md+=['',f'Mezery v simulovaném pohybu: díly {simclr["mezera_dilu_mm"]:.1f} mm, schod {simclr["odstup_schod_mm"]:.1f} mm (informativní).']
     md+=['','## Co tato kontrola nedělá','','- Pohyb se přizpůsobí nové geometrii a doladí se jen švih volných končetin; trup ani rozložení sil se znovu neoptimalizují.',
       '- Rámy a vidlice v modelu se nepřekreslují – posouvá se servo a osa. Střet serva s vlastním rámem se nekontroluje.',
       '- Chůze, sed a další pohyby se v této kontrole nepočítají (přepočítá je simulátor v prohlížeči).',
-      '- Dynamika je předkorigovaná podle statiky (jako u R13); bez předkorekce R13 nedoběhne. Krátké špičky na mezi serva má i výchozí R13.','- Fyzicky nic neověřeno.']
+      '- Dynamika je předkorigovaná podle statiky (jako u R13); bez předkorekce R13 nedoběhne. Krátké špičky na mezi serva má i výchozí R13.','- Robot se v simulaci řídí jen předem spočítanými povely bez zpětné vazby (bez IMU); skutečný robot s vyvažováním bude robustnější, bez něj méně.','- Fyzicky nic neověřeno.']
     open(os.path.join(outdir,'protokol.md'),'w').write('\n'.join(md)+'\n')
     log('HOTOVO', 'PROŠLO' if proslo else 'NEPROŠLO')
     return 0

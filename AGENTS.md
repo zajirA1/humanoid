@@ -39,7 +39,8 @@ Na projektu pracuje střídavě Claude i GPT. Platí společná pravidla `ai-pro
 ## Přepočet úpravy
 
 Workflow *Přepočet úpravy* smí Claude/GPT spustit kdykoli (nic nenasazuje). Meze verdiktu jsou v `kontrola/prepocet.py`
-(`MEZE`); měnit je jen na pokyn majitele. `kontrola/r14engine.js` musí být shodný se `zdroj/uprava-kloubu/r14engine.js`.
+(`MEZE`, povinné varianty dynamiky `POVINNE` = nominál a schod 205/215 mm, `ROBUST`); měnit je jen na pokyn majitele.
+Po změně výchozího pohybu (`kontrola/data/model.json`) přepočítat `vychozi-R13*.json` (srovnávací hodnoty). `kontrola/r14engine.js` musí být shodný se `zdroj/uprava-kloubu/r14engine.js`.
 Po změně `zdroj/uprava-kloubu/*` znovu sestavit `web/app/emil-h22.html`.
 
 ## Příkazy

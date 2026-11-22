@@ -76,7 +76,7 @@ function r14Engine(K){
  function rodrigues(o){const th=Math.hypot(o[0],o[1],o[2]);if(th<1e-12)return [1,0,0,0,1,0,0,0,1];const x=o[0]/th,y=o[1]/th,z=o[2]/th,s=Math.sin(th),c=Math.cos(th),v=1-c;return [c+x*x*v,y*x*v+z*s,z*x*v-y*s,x*y*v-z*s,c+y*y*v,z*y*v+x*s,x*z*v+y*s,y*z*v-x*s,c+z*z*v]}
  const VARJ=[2,3,4,5,6,7,8,9,10,12,13,14,15,16,17,18,19,20],VIDX={};VARJ.forEach((j,i)=>VIDX[j]=6+i);const NV=24,PELV=[0,1,324];
  // whole-body least squares: supports stay where they were, torso and free limbs give way
- function retarget(q0,root0,w0,flat){const q=q0.slice();let root=root0.slice();const on=new Set();for(let i=0;i<flat.length;i+=4)on.add(flat[i]);
+ function retarget(q0,root0,w0,flat,off){const q=q0.slice();let root=root0.slice();const on=new Set();for(let i=0;i<flat.length;i+=4)on.add(flat[i]);
   const tasks=[];
   for(const L of LIMBS){const shinMode=on.has(L.shin)&&!on.has(L.foot);
    const add=(link,wt,c)=>{for(const p of refs(link,L.sx))tasks.push({link,p,t:pos(w0[link],p),wt,c})};
@@ -89,7 +89,7 @@ function r14Engine(K){
     const rc=[pw[0]-c[0],pw[1]-c[1],pw[2]-c[2]];for(let a=0;a<3;a++){const u=[0,0,0];u[a]=1;cols.push(cross(u,rc));idx.push(3+a)}
     for(const j of anc[T.link])if(VIDX[j]!==undefined){cols.push(cross(fr.ax[j],[pw[0]-fr.piv[j][0],pw[1]-fr.piv[j][1],pw[2]-fr.piv[j][2]]));idx.push(VIDX[j])}
     const ww=T.wt*T.wt;for(let i=0;i<cols.length;i++){const ci=cols[i];b[idx[i]]+=ww*(ci[0]*r[0]+ci[1]*r[1]+ci[2]*r[2]);for(let k=0;k<cols.length;k++){const ck=cols[k];A[idx[i]][idx[k]]+=ww*(ci[0]*ck[0]+ci[1]*ck[1]+ci[2]*ck[2])}}}
-   for(let a=0;a<3;a++){A[a][a]+=lt;b[a]-=lt*du[a];A[3+a][3+a]+=lr;b[3+a]-=lr*dw[a]}
+   for(let a=0;a<3;a++){const k=off?0.05:lt,tg=off?off[a]:0;A[a][a]+=k;b[a]-=k*(du[a]-tg);A[3+a][3+a]+=lr;b[3+a]-=lr*dw[a]}
    VARJ.forEach((j,i)=>{A[6+i][6+i]+=lq;b[6+i]-=lq*(q[j]-q0[j])*rad});
    for(let i=0;i<NV;i++)A[i][i]+=1e-3;
    const x=solveSmall(A,b);let big=0;for(let i=3;i<NV;i++)big=Math.max(big,Math.abs(x[i]));const sc=big>0.3?0.3/big:1;let step=0;for(let i=0;i<NV;i++){x[i]*=sc;step=Math.max(step,Math.abs(x[i])*(i<3?0.01:1))}
