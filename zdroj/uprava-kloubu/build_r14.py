@@ -58,7 +58,8 @@ panel='''<aside id="r14" aria-label="Úprava kloubů"><button id="r14Toggle" ari
 <details><summary>Export a import nastavení</summary><div class="r14-btns"><button id="r14ExportBtn">Stáhnout JSON</button><button id="r14ImportBtn">Načíst z textu</button></div><textarea id="r14Json" rows="5" aria-label="Nastavení úprav jako JSON" spellcheck="false"></textarea></details>
 <p class="r14-note">V modelu táhni za kolečko vybraného kloubu. Oranžově je nakreslená vidlice vybraného kloubu, modře vidlice ostatních upravených kloubů, čárkovaně posun osy.</p>
 </div></aside>'''
-rep('<section id="r13" aria-labelledby="r13Title">',css+panel+'<section id="r13" aria-labelledby="r13Title">')
+kotva='<section id="r15" aria-labelledby="r15Title">' if '<section id="r15" aria-labelledby="r15Title">' in s else '<section id="r13" aria-labelledby="r13Title">'
+rep(kotva,css+panel+kotva)   # panel mimo sbalitelné oddíly (od R15 je zpráva R13 v <details>)
 i=s.find('<p class="r13-lead">'); j=s.find('</p>',i)+4
 s=s[:j]+'<p class="r13-note"><b>Nově:</b> tlačítkem <b>Úprava kloubů</b> vpravo dole posuneš libovolné servo přímo v modelu, uvidíš překreslenou vidlici a necháš přepočítat přelez i chůzi.</p>'+s[j:]
 k=s.find('<script type="application/json" id="r13Data">'); s=s[:k]+'<script type="application/json" id="r14Data">'+data+'</script>'+s[k:]

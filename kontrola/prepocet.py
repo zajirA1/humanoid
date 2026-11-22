@@ -109,7 +109,7 @@ def mj_xml(P,E,links,mu=0.5,step_h=STEP,mass_scale=1.0,lim_scale=1.0,kp_scale=1.
 <default class="env"><geom contype="1" conaffinity="2"/></default><default class="foot"><geom contype="2" conaffinity="1"/></default><default class="pad"><geom contype="2" conaffinity="1"/></default></default>
 <worldbody><geom name="floor" type="plane" size="2 2 .1" class="env"/><geom name="step" type="box" pos="0 -0.14 {step_h*MM/2:.5f}" size="0.33 0.14 {step_h*MM/2:.5f}" class="env"/>
 <body name="b22" pos="0 0 0"><freejoint name="root"/>{inertial(22)}{''.join(body(c) for c in children[22])}</body></worldbody><actuator>{act}</actuator></mujoco>'''
-def simuluj(frames,P,E,links,G,ff,mu=0.5,step_h=STEP,mass_scale=1.0,lim_scale=1.0,y_offset=0.0,settle=1.0,tail=3.0,vyvazovani=None):
+def simuluj(frames,P,E,links,G,ff,mu=0.5,step_h=STEP,mass_scale=1.0,lim_scale=1.0,y_offset=0.0,settle=1.0,tail=3.0,vyvazovani=None,momenty=False):
     import mujoco
     MM=1e-3; m=mujoco.MjModel.from_xml_string(mj_xml(P,E,links,mu,step_h,mass_scale,lim_scale,G=G)); d=mujoco.MjData(m)
     Q=np.radians(np.array([f['q'] for f in frames])); n=len(frames); T=(n-1)/HZ
@@ -142,6 +142,7 @@ def simuluj(frames,P,E,links,G,ff,mu=0.5,step_h=STEP,mass_scale=1.0,lim_scale=1.
     res=dict(uspech=bool(err[-1]<25 and tilt[-1]<8 and div is None),odchylka_konec_mm=float(err[-1]),odchylka_max_mm=float(err[ok].max()),naklon_konec_deg=float(tilt[-1]),
              moment_max=float(ratio[ok].max()),moment_kloub=JN[int(np.unravel_index(ratio[ok].argmax(),ratio[ok].shape)[1])],pad_s=None if not len(bad) else float(tt[bad[0]]),na_mezi=float(nsat/max(1,ntot)))
     states=[(Rl[i],np.array(root[i][:3])/MM,qs[i],tt[i]) for i in range(len(tt))]
+    if momenty: res['_snimky']=dict(t=tt[ok].tolist(),pomer=ratio[ok].max(axis=1).tolist(),moment=np.array(taupk)[ok].tolist())  # pro stránku, do protokolu nejde
     return res,states
 # ---------- hlavní běh ----------
 def main():

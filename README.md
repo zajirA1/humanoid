@@ -3,12 +3,13 @@
 Soukromý prohlížeč a simulátor humanoida Emil H22. Vše se počítá v prohlížeči, server jen po přihlášení
 vydá jeden soubor. Běží na Hetzner Webhostingu (bez SSH), cílová adresa `robot.caribhaus.com`.
 
-Číslování: **aplikace** a **revize robota** zvlášť. Teď: aplikace 0.3 (přepočet úpravy v GitHubu); dříve 0.2 · robot H22 R13 (přelez schodu 21 cm) + R14 (úprava kloubů v modelu).
+Číslování: **aplikace** a **revize robota** zvlášť. Teď: aplikace 0.4 (stránka převedená na R15, číslo verze v záhlaví); dříve 0.3 (přepočet úpravy v GitHubu), 0.2 · robot H22 R15 (přelez schodu 21 cm s vyrovnanějšími oporami a přizpůsobením výšce; vychází z R13) + R14 (úprava kloubů v modelu).
 
 | Složka | Co v ní je |
 |---|---|
 | `web/` | přesně to, co je na serveru: přihlášení (`index.php`), simulátor (`app/emil-h22.html`), zákazy |
 | `zdroj/uprava-kloubu/` | zdroj úpravy kloubů (R14): výpočetní jádro, ovládání, data a skript, který je vloží do stránky |
+| `zdroj/r15/` | převod stránky na R15: hotový pohyb, statika, dynamika, oddíl R15 a texty |
 | `vypocty/` | Python skripty, kterými vznikl přelez R13 (hledání pohybu, statika, mezery, dynamika, testy) |
 | `testy/` | kontrola výpočtu sil proti referenci a testy stránky v prohlížeči |
 | `kontrola/` | automatická kontrola úpravy kloubů (data, přizpůsobení v Node, statika, mezery FCL, dynamika MuJoCo) |
@@ -39,8 +40,8 @@ bash .github/kontrola.sh     hesla v repozitáři, PHP, výpočet sil proti refe
 
 ## Známá omezení
 
-- Simulátor je jeden soubor HTML o 14,9 MB. Sestavuje se z předchozí verze stránky skriptem
-  `zdroj/uprava-kloubu/build_r14.py`; rozdělení na kód a data zatím není hotové.
+- Simulátor je jeden soubor HTML o 14,9 MB. Sestavuje se ze stránky R13 dvěma skripty (`zdroj/r15/stranka_r15.py`,
+  `zdroj/uprava-kloubu/build_r14.py`, postup v `CLAUDE.md`); rozdělení na kód a data zatím není hotové.
+- Rozpis mezer po jednotlivých dílech (dialog Mezery dílů) a podrobná zpráva R13 jsou z R13; R15 se liší jen ve fázi 3 a souhrnné hodnoty R15 jsou v oddílu R15.
 - Skripty ve `vypocty/` (původní hledání pohybu R13) mají cesty natvrdo (`/home/claude/sim`, `/home/claude/work`) a potřebují data
   vytěžená z původní stránky a mezivýsledky z e2. Jsou uložené kvůli dohledatelnosti, ne jako hotový nástroj.
-- Nasazovací workflow zatím neběželo proti serveru.

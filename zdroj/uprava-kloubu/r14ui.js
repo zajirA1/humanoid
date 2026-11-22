@@ -1,5 +1,5 @@
 /* ===== R14 · úprava kloubů přímo v modelu ===== */
-const r14D=JSON.parse($('r14Data').textContent);
+const r14D=JSON.parse($('r14Data').textContent),r14Rev=r14D.revize||'R13';
 const r14P0=r9Pivots.map(p=>p.slice()),r14Links0=r10MassModels.r9.links.map(l=>l.slice());
 const r14Eng=r14Engine({par,axes,P:r14P0,links:r14Links0,lim:r14D.lim,mu:r14D.mu,servoKg:r14D.servoKg});
 r14Eng.setClouds(r14D.clouds,r14D.pairs);
@@ -83,7 +83,7 @@ function r14Controls(){r14Sync();const j=r14Sel,e=r14Edits[j]||{d:[0,0,0],carry:
  else lines.push(['Vidlice','pro tento kloub nemám změřený tvar uchycení, kreslí se jen poloha osy']);
  lines.push(['Hmotnost posouvaného pohonu',fmt(1000*r14D.servoKg[j],0)+' g']);
  $('r14Facts').innerHTML=lines.map(([k,v])=>'<div><span>'+k+'</span><b>'+v+'</b></div>').join('');
- const n=Object.keys(r14Edits).length;$('r14State').textContent=!r9IsActive()?'Úpravy fungují jen v sestavě Emil R12/R13.':n?('Upraveno kloubů: '+n+'. '+(r14Result?'Souhrn níže odpovídá této úpravě.':'Aktuální poloha se přepočítává hned, souhrn celého pohybu až po stisku Přepočítat.')):'Bez úprav. Vyber kloub v seznamu nebo kliknutím na kolečko v modelu a posuň ho.';
+ const n=Object.keys(r14Edits).length;$('r14State').textContent=!r9IsActive()?'Úpravy fungují jen v pracovní sestavě Emil '+r14Rev+'.':n?('Upraveno kloubů: '+n+'. '+(r14Result?'Souhrn níže odpovídá této úpravě.':'Aktuální poloha se přepočítává hned, souhrn celého pohybu až po stisku Přepočítat.')):'Bez úprav. Vyber kloub v seznamu nebo kliknutím na kolečko v modelu a posuň ho.';
  r14ShowResult()}
 // ---------- full run ----------
 const r14Tick=()=>new Promise(r=>setTimeout(r,0));
@@ -124,7 +124,7 @@ function r14ShowResult(){const box=$('r14Results'),R=r14Result;if(!R||R.ver!==r1
  let g='';for(const v of [0,.5,1]){g+='<line x1="'+ml+'" x2="'+(Wd-mr)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="'+(v===1?'#8a3a2a':'#d9d2c4')+'" stroke-width="1"'+(v===1?' stroke-dasharray="4 3"':'')+'/><text x="'+(ml-4)+'" y="'+(Y(v)+3.5)+'" text-anchor="end">'+(100*v)+' %</text>'}
  for(const s of [0,60,120,180])if(s*hz<n)g+='<text x="'+X(s*hz)+'" y="'+(Ht-4)+'" text-anchor="middle">'+s+' s</text>';
  for(const i of R.bad)g+='<line x1="'+X(i)+'" x2="'+X(i)+'" y1="'+mt+'" y2="'+(mt+6)+'" stroke="#8a3a2a" stroke-width="1.5"/>';
- h+='<div class="r14-legend"><span><i style="background:#2a78d6"></i>Výchozí R13</span><span><i style="background:#c2571a"></i>Po úpravě</span><span><i class="r14-dash"></i>Mez serva</span></div>'
+ h+='<div class="r14-legend"><span><i style="background:#2a78d6"></i>Výchozí '+r14Rev+'</span><span><i style="background:#c2571a"></i>Po úpravě</span><span><i class="r14-dash"></i>Mez serva</span></div>'
   +'<svg id="r14Chart" viewBox="0 0 '+Wd+' '+Ht+'" role="img" aria-label="Využití nejzatíženějšího serva během přelezu, výchozí stav a stav po úpravě">'+g+'<path d="'+path(r14D.ref)+'" fill="none" stroke="#2a78d6" stroke-width="1.6"/><path d="'+path(R.s)+'" fill="none" stroke="#c2571a" stroke-width="1.6"/><line id="r14Cross" y1="'+mt+'" y2="'+(Ht-mb)+'" stroke="#1f2a30" stroke-width="1" visibility="hidden"/></svg><div id="r14Tip" class="r14-tip">Najetím na graf zobrazíš hodnoty, kliknutím skočíš na polohu.</div>';
  // joints
  const rows=[];for(let j=0;j<22;j++){if(j===11||j===21)continue;rows.push([j,B.tau[j],R.tau[j],R.tau[j]/r14D.lim[j]])}rows.sort((a,b)=>b[3]-a[3]);
@@ -139,7 +139,7 @@ function r14ShowResult(){const box=$('r14Results'),R=r14Result;if(!R||R.ver!==r1
  for(const b of box.querySelectorAll('[data-go]'))b.onclick=()=>r14Go(+b.dataset.go)}
 // ---------- export / import ----------
 function r14Export(){const R=r14Result&&r14Result.ver===r14Ver?r14Result:null,ed={};for(const [j,e] of Object.entries(r14Edits))ed[j]={kloub:data.joints[j],posun_mm:e.d,nese_dalsi_dily:!!e.carry,natoceni_serva_deg:e.rot||0};
- const out={model:'Emil H22 R13',souradnice:'základní poloha, mm: x + vlevo (z pohledu robota), y + dozadu, z + nahoru',upravy:ed,
+ const out={model:'Emil H22 '+r14Rev,souradnice:'základní poloha, mm: x + vlevo (z pohledu robota), y + dozadu, z + nahoru',upravy:ed,
   souhrn:R?{prelez_max_vyuziti:+R.pk.toFixed(4),prelez_kloub:R.jn,polohy_bez_rovnovahy:R.bad.length,posun_opory_mm:+R.drift.toFixed(3),posun_trupu_mm:+R.shift.toFixed(2),mezera_dilu_odhad_mm:+R.selfMin.toFixed(2),odstup_schod_odhad_mm:+R.envMin.toFixed(2),chuze:Object.fromEntries(Object.entries(R.walks).map(([k,v])=>[k,+v.pk.toFixed(4)]))}:null};
  const txt=JSON.stringify(out,null,1);$('r14Json').value=txt;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));a.download='emil-uprava-kloubu.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
 function r14Import(){try{const o=JSON.parse($('r14Json').value),src=o.upravy||o.edits||{},ed={};for(const [j,e] of Object.entries(src)){const d=(e.posun_mm||e.d||[0,0,0]).map(v=>cl(+v||0,-40,40));if(+j>=0&&+j<22)ed[+j]={d,carry:!!(e.nese_dalsi_dily??e.carry),rot:+(e.natoceni_serva_deg??e.rot)||0}}

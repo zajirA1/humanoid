@@ -63,6 +63,10 @@ if (!empty($_SESSION['ok'])) {
     if (empty($_SESSION['csrf'])) { $_SESSION['csrf'] = bin2hex(random_bytes(16)); }
     header('Content-Type: text/html; charset=utf-8');
     header('Cache-Control: private, no-cache');
+    // Simulátor má ~15 MB: prohlížeč si ho drží v mezipaměti a při dalším otevření se jen ověří (304), dokud se soubor ani relace nezmění.
+    $etag = '"' . sha1(filemtime($soubor) . ':' . filesize($soubor) . ':' . (string) $_SESSION['csrf']) . '"';
+    header('ETag: ' . $etag);
+    if (str_replace('-gzip', '', trim((string) ($_SERVER['HTTP_IF_NONE_MATCH'] ?? ''))) === $etag) { http_response_code(304); exit; }
     // Klíč pro odesílání přepočtu (api.php) – vkládá se do stránky až po přihlášení.
     $meta = '<meta name="robot-csrf" content="' . htmlspecialchars((string) $_SESSION['csrf'], ENT_QUOTES) . '"><meta name="robot-api" content="api.php">';
     $html = (string) file_get_contents($soubor);
