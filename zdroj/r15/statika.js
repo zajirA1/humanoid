@@ -2,7 +2,7 @@
 // pro každou polohu: využití serva (tření 0,5), nejzatíženější kloub, momenty, svislé síly po článcích opor, těžiště
 const fs=require('fs'),path=require('path'),eng=require(path.join(__dirname,'../../kontrola/r14engine.js'));
 const [,,mp,pp,out]=process.argv,M=JSON.parse(fs.readFileSync(mp)),Q=JSON.parse(fs.readFileSync(pp));
-const E=eng({par:M.PAR,axes:M.AX,P:M.P,links:M.LINKS,lim:M.LIM,mu:0.5,servoKg:M.servoKg});E.setEdits({});
+const E=eng({par:M.PAR,axes:M.AX,P:M.P,links:M.LINKS,lim:M.LIM,mu:0.5,servoKg:M.servoKg});E.setEdits(E.mergeEdits(M.zaklad||{},{}));   // revize z úpravy: zapečené posuny
 const r=(x,n=5)=>Math.round(x*10**n)/10**n,res=[];
 for(let i=0;i<Q.q.length;i++){const fl=M.contacts[i],w=E.fk(Q.q[i],Q.rt[i]),s=E.statics(w,fl);
  if(!s){res.push(null);continue}

@@ -10,6 +10,7 @@ vydá jeden soubor. Běží na Hetzner Webhostingu (bez SSH), cílová adresa `r
 | `web/` | přesně to, co je na serveru: přihlášení (`index.php`), simulátor (`app/emil-h22.html`), zákazy |
 | `zdroj/uprava-kloubu/` | zdroj úpravy kloubů (R14): výpočetní jádro, ovládání, data a skript, který je vloží do stránky |
 | `zdroj/r15/` | převod stránky na R15: hotový pohyb, statika, dynamika, oddíl R15 a texty |
+| `zdroj/revize/` | nástroj Nová revize (`nova_revize.py`) a podklady revizí vzniklých z úprav kloubů (`R16/`, …) |
 | `vypocty/` | Python skripty, kterými vznikl přelez R13 (hledání pohybu, statika, mezery, dynamika, testy) |
 | `testy/` | kontrola výpočtu sil proti referenci a testy stránky v prohlížeči |
 | `kontrola/` | automatická kontrola úpravy kloubů (data, přizpůsobení v Node, statika, mezery FCL, dynamika MuJoCo) |
@@ -31,6 +32,11 @@ Nic se nenasazuje samo. Podrobně v [docs/NASAZENI.md](docs/NASAZENI.md).
 
 `python3 -I kontrola/prepocet.py upravy/<soubor>.json <výstup> [--rychle]` – totéž běží ve workflow *Přepočet úpravy*.
 Knihovny: `numpy scipy python-fcl mujoco`, Node 18+.
+
+## Nová revize z úpravy
+
+V simulátoru úprava → *Odeslat k přepočtu* → když plná kontrola projde: **Actions → Nová revize → Run workflow** s označením přepočtu.
+Vznikne commit s novou revizí (posunutá serva, dokreslené úchyty, verze aplikace +0,1). Na server až přes *Nasazení na Hetzner*.
 
 ## Kontrola
 

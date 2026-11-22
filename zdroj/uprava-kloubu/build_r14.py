@@ -13,7 +13,7 @@ rep("{axes,par}=data;let P=data.P;","{axes,par}=data;let P=data.P;var r14E=Array
 rep("for(let i=0;i<22;i++)w[i]=mat(w[par[i]],rot(axes[i],q[i],P[i]));return w}","for(let i=0;i<22;i++)w[i]=mat(w[par[i]],r14T(i,q[i]));return w}\nfunction r14T(i,a){const t=rot(axes[i],a,P[i]),e=r14E[i];if(e[0]||e[1]||e[2]){const r=dir(t,e);t[9]+=r[0];t[10]+=r[1];t[11]+=r[2]}return t}")
 m=re.search(r"function render\(paintOnly\)\s*\{",s); assert m and len(re.findall(r"function render\(paintOnly\)\s*\{",s))==1
 s=s[:m.end()]+"r14Before();"+s[m.end():]
-rep("const project=rnd.paint(cmd,target,az,el,span/zoom);","const project=rnd.paint(cmd,target,az,el,span/zoom);r14After(project,w);")
+rep("const project=rnd.paint(cmd,target,az,el,span/zoom);","r14Cmd(cmd,w);const project=rnd.paint(cmd,target,az,el,span/zoom);r14After(project,w);")
 rep("document.documentElement.dataset.ready='true';\n}catch(err)",eng+"\n"+ui+"\ndocument.documentElement.dataset.ready='true';\n}catch(err)")
 m2=re.findall(r"function row\(\)\s*\{\s*if\(r10IsMotion\(\)\)return r10ReadPose\(\);",s); assert len(m2)==1
 s=s.replace(m2[0],"function row() { if(r10IsMotion())return r14Fix(r10ReadPose());")

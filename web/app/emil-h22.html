@@ -2183,7 +2183,7 @@ function render(paintOnly){r14Before();
  const canInspect=Array.isArray(r12Witness)&&r12Witness.length===2&&r12Witness.every(p=>Array.isArray(p)&&p.length===3&&p.every(Number.isFinite));
  detailButton.hidden=!canInspect;
  if(canInspect&&detailButton.dataset.active==='on'){target=r12Witness[0].map((v,i)=>(v+r12Witness[1][i])*.5);span=145;}
- const project=rnd.paint(cmd,target,az,el,span/zoom);r14After(project,w);r12ShowWitness(r12SelectedPair(),project);climbMarkers(a,project);r10ContactMarkers(a,w,project);r10MapServos(w,project);$('r11Archive').hidden=r9IsActive();r11DrawTolerance(a,w,project);
+ r14Cmd(cmd,w);const project=rnd.paint(cmd,target,az,el,span/zoom);r14After(project,w);r12ShowWitness(r12SelectedPair(),project);climbMarkers(a,project);r10ContactMarkers(a,w,project);r10MapServos(w,project);$('r11Archive').hidden=r9IsActive();r11DrawTolerance(a,w,project);
  if(paintOnly===true)return;
  $('status').textContent=(mode==='climb'?('Fáze '+(a.phase+1)+' / '+climbData.phases.length+' · '):'')+(steps?'Stupeň '+a.stage+' / 2 · ':'')+a.tag;$('time').textContent=fmt(idx/o.hz,1)+' / '+fmt((o.frames-1)/o.hz,1)+' s';$('slider').value=idx;
  const vk=(k,v)=>'<div class="kv"><span>'+k+'</span><b>'+v+'</b></div>',perc=v=>'<span class="'+(v>1?'over':'read')+'">'+fmt(100*v,0)+' %</span>';
@@ -3918,7 +3918,8 @@ function r14Engine(K){
  function setEdits(ed){
   edits=ed||{};P=P0.map(p=>p.slice());E=P0.map(()=>[0,0,0]);links=links0.map(l=>l.slice());
   for(const k in edits){const j=+k,e=edits[k];if(!e)continue;const d=e.d||[0,0,0];
-   for(let a=0;a<3;a++){P[j][a]+=d[a];if(e.carry)E[j][a]=d[a]}
+   // E = posun všeho, co na kloubu visí (vlastní vektor u složené úpravy revize, jinak d při „nese další díly“)
+   for(let a=0;a<3;a++){P[j][a]+=d[a];E[j][a]=e.E?(+e.E[a]||0):e.carry?d[a]:0}
    const L=par[j],m=K.servoKg[j];for(let a=0;a<3;a++)links[L][1+a]+=d[a]*m/links[L][0];}
   return {P,E,links};
  }
@@ -4030,7 +4031,11 @@ function r14Engine(K){
     const dx=Math.max(Math.abs(x)-330,0),dy=Math.max(y,-280-y,0),dz=Math.max(z-210,0);let d;if(dx||dy||dz)d=Math.hypot(dx,dy,dz);else d=-Math.min(-y,y+280,210-z);if(d<env)env=d}}
   return {self:best,env}}
  function fk0(q,root){const sP=P,sE=E;P=P0;E=P0.map(()=>[0,0,0]);const w=fk(q,root);P=sP;E=sE;return w}
- return {setEdits,setClouds,prepClouds,clearance,fk,fk0,frames,com,statics,retarget,jointT,mirror,anc,pos,dir,mat,get P(){return P},get E(){return E},get links(){return links},P0,links0,mtot};
+ // složení úprav: základ revize (zapečené posuny) + úprava uživatele -> jeden posun osy d, posun visících dílů E, natočení
+ function mergeEdits(base,user){const out={};for(const src of [base||{},user||{}])for(const k in src){const e=src[k];if(!e)continue;const d=(e.d||[0,0,0]).map(Number),E=e.E?e.E.map(Number):e.carry?d:[0,0,0];
+   const o=out[k]||(out[k]={d:[0,0,0],E:[0,0,0],rot:0});for(let a=0;a<3;a++){o.d[a]+=d[a];o.E[a]+=E[a]}o.rot+=+(e.rot||0)}
+  return out}
+ return {setEdits,mergeEdits,setClouds,prepClouds,clearance,fk,fk0,frames,com,statics,retarget,jointT,mirror,anc,pos,dir,mat,get P(){return P},get E(){return E},get links(){return links},P0,links0,mtot};
 }
 
 
@@ -4042,6 +4047,9 @@ r14Eng.setClouds(r14D.clouds,r14D.pairs);
 const r14Items0=r9RenderItems.map(o=>o.t.slice()),r14Loads0=r9Loads.climb.loads.map(l=>l?{...l}:l),r14Store=new WeakMap();
 let r14Edits={},r14Ver=0,r14AppliedVer=-1,r14AppliedOn=null,r14Active=false,r14Sel=4,r14Proj=null,r14W=null,r14Busy=false,r14Result=null,r14Base=null,r14Drag=null,r14Open=false;
 const r14Has=()=>Object.keys(r14Edits).length>0;
+// revize vzniklá z úpravy: zapečené posuny serv (r14D.zaklad) platí vždy; úpravy v panelu se k nim přičítají
+const r14Zaklad=r14D.zaklad||{},r14MaZaklad=Object.keys(r14Zaklad).length>0,r14Any=()=>r14Has()||r14MaZaklad;
+let r14EffCache=null,r14EffVer=-1;function r14Eff(edits){if(edits!==r14Edits)return r14Eng.mergeEdits(r14Zaklad,edits);if(r14EffVer!==r14Ver){r14EffCache=r14Eng.mergeEdits(r14Zaklad,r14Edits);r14EffVer=r14Ver}return r14EffCache}
 const r14Mirror=j=>j>=2&&j<12?j+10:j>=12?j-10:j;
 const r14Zero=e=>!e||(!e.rot&&!e.carry&&Math.hypot(...e.d)<1e-6);
 // direction from the axis towards the bridge of the fork on the driven part (rest pose)
@@ -4049,11 +4057,12 @@ const r14ForkDir={};
 for(let j=0;j<22;j++){const f=r14D.forks[j];if(!f)continue;const ch=par.map((p,k)=>p===j?k:-1).filter(k=>k>=0);let v=ch.length?sub(r14P0[ch[0]],r14P0[j]):[0,0,-1];if(j===7||j===17)v=[0,0,-1];if(j===10||j===20)v=[0,0,-1];
  const a=axes[j],along=dot(v,a);v=sub(v,mul(a,along));if(norm(v)<1e-6)v=Math.abs(a[2])<.9?[0,0,-1]:[0,-1,0];r14ForkDir[j]=unit(v)}
 function r14Apply(on,edits=r14Edits){
- const st=r14Eng.setEdits(on?edits:{});
+ const ef=on?r14Eff(edits):{},st=r14Eng.setEdits(ef);
  for(let j=0;j<22;j++)for(let a=0;a<3;a++){r9Pivots[j][a]=st.P[j][a];r14E[j][a]=on?st.E[j][a]:0}
  r10MassModels.r9.links.forEach((l,i)=>{for(let a=1;a<4;a++)l[a]=st.links[i][a]});
- r9RenderItems.forEach((o,k)=>{let t=r14Items0[k].slice();const j=o.owner,e=on&&Number.isInteger(j)&&j<22&&!o.frame?edits[j]:null;
-  if(e){if(e.rot&&o.link===par[j])t=mat(rot(axes[j],e.rot,r14P0[j]),t);if(!(e.carry&&o.link===j))for(let a=0;a<3;a++)t[9+a]+=e.d[a]}o.t=t});
+ // servo s osou se posune o d; díly na hnaném článku se posunou o d−E (E už nese kinematika)
+ r9RenderItems.forEach((o,k)=>{let t=r14Items0[k].slice();const j=o.owner,e=on&&Number.isInteger(j)&&j<22&&!o.frame?ef[j]:null;
+  if(e){if(e.rot&&o.link===par[j])t=mat(rot(axes[j],e.rot,r14P0[j]),t);const sh=o.link===j?sub(e.d,e.E):e.d;for(let a=0;a<3;a++)t[9+a]+=sh[a]}o.t=t});
  r14AppliedOn=on;r14AppliedVer=r14Ver;r14Active=on;
 }
 function r14Sync(){const on=r9IsActive();if(on!==r14AppliedOn||r14Ver!==r14AppliedVer)r14Apply(on)}
@@ -4065,25 +4074,32 @@ function r14Climb(i){const pose=r9Motion.poses[i];if(!pose)return null;const rec
  if(!s){L[i]={...(b||{}),ratio:Infinity,joint:'rovnováha nenalezena',moving:Infinity};return rec}const k=b&&b.ratio>0?b.moving/b.ratio:1.1,fz=s.fz,g=l=>fz[l]||0;
  L[i]={...(b||{}),tau:s.tau,ratio:s.s,joint:data.joints[s.jmax],cm:s.com,leftN:g(10),rightN:g(20),palmN:g(10)+g(20),kneeN:[g(5),g(15)],footN:[g(7),g(17)],moving:s.s*k,movingTau:s.tau.map(v=>v*k)};return rec}
 function r14Walk(pose){if(!pose||!pose.contacts)return;const rec=r14Rec(pose);if(rec.ver===r14Ver)return;rec.ver=r14Ver;
- if(!r14Has()){pose.q=rec.q0.slice();pose.rt=rec.rt0.slice();return}
+ if(!r14Any()){pose.q=rec.q0.slice();pose.rt=rec.rt0.slice();return}
  const flat=[];if(pose.contacts.leftFoot)flat.push(7,0,0,0);if(pose.contacts.rightFoot)flat.push(17,0,0,0);
  const r=r14Eng.retarget(rec.q0,rec.rt0,r14Eng.fk0(rec.q0,rec.rt0),flat);pose.q=r.q;pose.rt=r.root;rec.res={drift:r.drift,shift:r.shift}}
 function r14Legacy(pa){if(!Array.isArray(pa)||!Array.isArray(pa[0])||!Array.isArray(pa[1]))return;let rec=r14Store.get(pa);if(!rec){rec={q0:pa[0].slice(),p0:pa[1].slice(),ver:0};r14Store.set(pa,rec)}if(rec.ver===r14Ver)return;rec.ver=r14Ver;
- if(!r14Has()){pa[0]=rec.q0.slice();pa[1]=rec.p0.slice();return}
+ if(!r14Any()){pa[0]=rec.q0.slice();pa[1]=rec.p0.slice();return}
  const rt=rec.p0.map((x,i)=>x/(i<9?12000:16)),f=pa[2]|0,flat=[];if(f&1)flat.push(7,0,0,0);if(f&2)flat.push(17,0,0,0);if(f&4)flat.push(10,0,0,0);if(f&8)flat.push(20,0,0,0);
  const r=r14Eng.retarget(rec.q0,rt,r14Eng.fk0(rec.q0,rt),flat);pa[0]=r.q;pa[1]=r.root.map((x,i)=>x*(i<9?12000:16))}
-function r14Fix(p){if(!r14Ready||!r14Active||!r14Has()||!p||!p.q||!p.rt)return p;const w0=r14Eng.fk0(p.q,p.rt),flat=[];
+function r14Fix(p){if(!r14Ready||!r14Active||!r14Any()||!p||!p.q||!p.rt)return p;const w0=r14Eng.fk0(p.q,p.rt),flat=[];
  for(const [link,sx] of [[7,1],[17,-1]]){let z=1e9;for(const c of [[sx*18.5,38],[sx*18.5,-58],[sx*95.5,38],[sx*95.5,-58]])z=Math.min(z,pos(w0[link],[c[0],c[1],0])[2]);if(z<1)flat.push(link,0,0,0)}
  const r=r14Eng.retarget(p.q,p.rt,w0,flat);return {...p,q:r.q,rt:r.root}}
 function r14Before(){if(!r14Ready)return;r14Sync();if(!r14Active)return;
  if(mode==='climb')r14Climb(idx);else if(mode==='walk'){r14Walk(walkData.poses[idx]);r14Walk(walkData.poses[idx+1])}else if(!r10IsMotion()){const o=info();if(o&&o.poses)r14Legacy(o.poses[idx])}}
 function r14After(project,w){if(!r14Ready)return;r14Proj=project;r14W=w;r14Overlay()}
+// ---------- dokreslené úchyty: bočnice a příčka vidlice k posunutému servu (zjednodušené, ne díl k tisku) ----------
+const r14ForkColor=hex('#c97b3d');
+function r14Cmd(cmd,w){if(!r14Ready||!r14Active||document.body.classList.contains('kondo-active'))return;const EF=r14Eff(r14Edits);
+ for(const k in EF){const j=+k,e=EF[k],f=r14D.forks[j];if(!f||Math.hypot(...e.d)<.05)continue;const a=axes[j],h=f.span/2,u=r14ForkDir[j],po=r14P0[j],pn=plus(po,e.d),b0=plus(po,mul(u,f.L)),Wj=w[j];
+  const plate=(A,B,n,W,Tk)=>{const L=sub(B,A),len=norm(L);if(len<.5)return;const ux=mul(L,1/len),v=unit(cross(n,ux)),c=mul(plus(A,B),.5);cmd.push(form('box',mat(Wj,[...mul(ux,len),...mul(v,W),...mul(n,Tk),...c]),r14ForkColor))};
+  for(const s of [-1,1])plate(plus(sub(pn,e.E),mul(a,s*h)),plus(b0,mul(a,s*h)),a,f.w,Math.max(1.5,f.t));
+  plate(plus(b0,mul(a,-h)),plus(b0,mul(a,h)),u,f.w,Math.max(1.5,f.t))}}
 // ---------- overlay: joint handles and the redrawn fork ----------
 const r14Layer=document.createElementNS('http://www.w3.org/2000/svg','svg');r14Layer.id='r14Layer';$('stage').append(r14Layer);
 function r14Pivot(j,w){return pos(w[par[j]],r9Pivots[j])}
 function r14Overlay(){const show=r14Open&&r9IsActive()&&!document.body.classList.contains('kondo-active');r14Layer.style.display=show?'':'none';if(!show||!r14Proj||!r14W)return;
  const w=r14W,P2=p=>r14Proj(p),parts=[],ln=(a,b,c,wd=2.5,dash='')=>{const A=P2(a),B=P2(b);parts.push('<line x1="'+A[0].toFixed(1)+'" y1="'+A[1].toFixed(1)+'" x2="'+B[0].toFixed(1)+'" y2="'+B[1].toFixed(1)+'" stroke="'+c+'" stroke-width="'+wd+'" stroke-linecap="round"'+(dash?' stroke-dasharray="'+dash+'"':'')+'/>')};
- for(let j=0;j<22;j++){const e=r14Edits[j];if(r14Zero(e)&&j!==r14Sel)continue;const f=r14D.forks[j],T=w[par[j]],a=axes[j];
+ const EF=r14Eff(r14Edits);for(let j=0;j<22;j++){const e=EF[j];if(r14Zero(e)&&j!==r14Sel)continue;const f=r14D.forks[j],T=w[par[j]],a=axes[j];
   const pn=r9Pivots[j],po=r14P0[j];
   if(e&&Math.hypot(...e.d)>.05)ln(pos(T,po),pos(T,pn),'#1f2a30',2,'4 3');
   if(f){const h=f.span/2,u=r14ForkDir[j],b0=plus(po,mul(u,f.L)),Wj=w[j];
@@ -4092,7 +4108,7 @@ function r14Overlay(){const show=r14Open&&r9IsActive()&&!document.body.classList
    const col=j===r14Sel?'#c2571a':'#2a78d6';ln(axis(-1),axis(1),col,2,'2 3');for(const s of [-1,1])ln(axis(s),br(s),col,3);ln(br(-1),br(1),col,3)}
  }
  for(let j=0;j<22;j++){const p=P2(r14Pivot(j,w)),ed=!r14Zero(r14Edits[j]),sel=j===r14Sel;
-  parts.push('<circle data-j="'+j+'" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="'+(sel?8:5.5)+'" fill="'+(sel?'#c2571a':ed?'#2a78d6':'#ffffff')+'" fill-opacity="'+(sel||ed?.95:.75)+'" stroke="#1f2a30" stroke-width="1.5"><title>'+data.joints[j]+'</title></circle>')}
+  parts.push('<circle data-j="'+j+'" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="'+(sel?8:5.5)+'" fill="'+(sel?'#c2571a':ed?'#2a78d6':!r14Zero(r14Zaklad[j])?'#c97b3d':'#ffffff')+'" fill-opacity="'+(sel||ed?.95:.75)+'" stroke="#1f2a30" stroke-width="1.5"><title>'+data.joints[j]+'</title></circle>')}
  r14Layer.innerHTML=parts.join('')}
 r14Layer.addEventListener('pointerdown',ev=>{const j=ev.target?.dataset?.j;if(j===undefined)return;ev.preventDefault();ev.stopPropagation();r14Sel=+j;$('r14Joint').value=j;r14Pick();r14Drag={id:ev.pointerId,x:ev.clientX,y:ev.clientY,d0:(r14Edits[r14Sel]?.d||[0,0,0]).slice()};r14Layer.setPointerCapture(ev.pointerId);r14Controls();render(true)});
 r14Layer.addEventListener('pointermove',ev=>{if(!r14Drag||ev.pointerId!==r14Drag.id||!r14Proj||!r14W)return;const j=r14Sel,T=r14W[par[j]],p=r14Pivot(j,r14W),s0=r14Proj(p),J=[[],[]];
@@ -4120,6 +4136,7 @@ function r14Controls(){r14Sync();const j=r14Sel,e=r14Edits[j]||{d:[0,0,0],carry:
  lines.push(['Hmotnost posouvaného pohonu',fmt(1000*r14D.servoKg[j],0)+' g']);
  $('r14Facts').innerHTML=lines.map(([k,v])=>'<div><span>'+k+'</span><b>'+v+'</b></div>').join('');
  const n=Object.keys(r14Edits).length;$('r14State').textContent=!r9IsActive()?'Úpravy fungují jen v pracovní sestavě Emil '+r14Rev+'.':n?('Upraveno kloubů: '+n+'. '+(r14Result?'Souhrn níže odpovídá této úpravě.':'Aktuální poloha se přepočítává hned, souhrn celého pohybu až po stisku Přepočítat.')):'Bez úprav. Vyber kloub v seznamu nebo kliknutím na kolečko v modelu a posuň ho.';
+ if(r14MaZaklad&&r9IsActive())$('r14State').textContent+=' Revize '+r14Rev+' má zapečené posuny '+Object.keys(r14Zaklad).length+' kloubů (měděné kolečko, dokreslené úchyty); úprava v panelu se k nim přičítá.';
  r14ShowResult()}
 // ---------- full run ----------
 const r14Tick=()=>new Promise(r=>setTimeout(r,0));
@@ -4175,7 +4192,7 @@ function r14ShowResult(){const box=$('r14Results'),R=r14Result;if(!R||R.ver!==r1
  for(const b of box.querySelectorAll('[data-go]'))b.onclick=()=>r14Go(+b.dataset.go)}
 // ---------- export / import ----------
 function r14Export(){const R=r14Result&&r14Result.ver===r14Ver?r14Result:null,ed={};for(const [j,e] of Object.entries(r14Edits))ed[j]={kloub:data.joints[j],posun_mm:e.d,nese_dalsi_dily:!!e.carry,natoceni_serva_deg:e.rot||0};
- const out={model:'Emil H22 '+r14Rev,souradnice:'základní poloha, mm: x + vlevo (z pohledu robota), y + dozadu, z + nahoru',upravy:ed,
+ const out={model:'Emil H22 '+r14Rev,zaklad_revize:r14MaZaklad?r14Rev:null,souradnice:'základní poloha, mm: x + vlevo (z pohledu robota), y + dozadu, z + nahoru',upravy:ed,
   souhrn:R?{prelez_max_vyuziti:+R.pk.toFixed(4),prelez_kloub:R.jn,polohy_bez_rovnovahy:R.bad.length,posun_opory_mm:+R.drift.toFixed(3),posun_trupu_mm:+R.shift.toFixed(2),mezera_dilu_odhad_mm:+R.selfMin.toFixed(2),odstup_schod_odhad_mm:+R.envMin.toFixed(2),chuze:Object.fromEntries(Object.entries(R.walks).map(([k,v])=>[k,+v.pk.toFixed(4)]))}:null};
  const txt=JSON.stringify(out,null,1);$('r14Json').value=txt;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));a.download='emil-uprava-kloubu.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
 function r14Import(){try{const o=JSON.parse($('r14Json').value),src=o.upravy||o.edits||{},ed={};for(const [j,e] of Object.entries(src)){const d=(e.posun_mm||e.d||[0,0,0]).map(v=>cl(+v||0,-40,40));if(+j>=0&&+j<22)ed[+j]={d,carry:!!(e.nese_dalsi_dily??e.carry),rot:+(e.natoceni_serva_deg??e.rot)||0}}
@@ -4196,7 +4213,7 @@ async function r14List(force){const box=$('r14Remote');if(!r14Csrf){box.innerHTM
  const L=d.prepocty||[];if(!L.length){box.innerHTML='<p class="r14-note">Zatím žádný přepočet.</p>';return}
  const stav=p=>p.stav!=='completed'?(p.stav==='ceka'?'čeká na spuštění':'počítá se…'):p.vysledek?(p.vysledek.proslo?'<b class="r14-ok">prošlo</b>':'<b class="r14-bad">neprošlo</b>'):(p.zaver==='success'?'hotovo':'<b class="r14-bad">chyba běhu</b>');
  box.innerHTML='<table class="r14-t"><thead><tr><th>Přepočet</th><th>Stav</th></tr></thead><tbody>'+L.map((p,i)=>{const v=p.vysledek,kl=Object.values(p.upravy||{}).map(e=>r14Esc(e.kloub)).join(', ');
-  const det=v?('<br>servo max '+fmt(100*(v.statika.max||0),1)+' % · mezera '+fmt(v.mezery.dily_mm,1)+' mm · schod '+fmt(v.mezery.schod_mm,1)+' mm'+(v.kontroly.filter(k=>!k.ok).map(k=>'<br><span class="r14-bad">✗ '+r14Esc(k.nazev)+': '+r14Esc(k.hodnota)+'</span>').join(''))+((v.varovani||[]).map(t=>'<br><span class="r14-warn">⚠ '+r14Esc(t)+'</span>').join(''))):'';
+  const det=v?('<br>servo max '+fmt(100*(v.statika.max||0),1)+' % · mezera '+fmt(v.mezery.dily_mm,1)+' mm · schod '+fmt(v.mezery.schod_mm,1)+' mm'+(v.kontroly.filter(k=>!k.ok).map(k=>'<br><span class="r14-bad">✗ '+r14Esc(k.nazev)+': '+r14Esc(k.hodnota)+'</span>').join(''))+((v.varovani||[]).map(t=>'<br><span class="r14-warn">⚠ '+r14Esc(t)+'</span>').join(''))+(v.proslo&&!p.rychle?'<br><span class="r14-ok">Z přepočtu jde udělat novou revizi: GitHub → Actions → Nová revize, označení <b>'+r14Esc(p.id)+'</b>.</span>':'')):'';
   return '<tr><th>'+new Date(p.cas*1000).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})+(p.rychle?' · rychlá':'')+'<br><span class="r14-note">'+kl+'</span></th><td>'+stav(p)+det+
    '<br><button class="r14-link" data-load="'+i+'">Načíst úpravu</button>'+(p.odkaz?' · <a href="'+r14Esc(p.odkaz)+'" target="_blank" rel="noopener">protokol a stránka návrhu</a>':'')+'</td></tr>'}).join('')+'</tbody></table>';
  for(const b of box.querySelectorAll('[data-load]'))b.onclick=()=>{const p=L[+b.dataset.load];$('r14Json').value=JSON.stringify({upravy:p.upravy});r14Import()};

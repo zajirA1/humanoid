@@ -3,11 +3,12 @@ Výsledek je vstupem pro zdroj/uprava-kloubu/build_r14.py (panel Úprava kloubů
 v zdroj/uprava-kloubu/r14page.json (ref, selfBase, envBase) podle R15.
 
 python3 -I zdroj/r15/stranka_r15.py <Emil-H22-R13-prelez-21cm.html> <výstup.html>
-Potřebuje: kontrola/data/model.json (R15), kontrola/data/vychozi*.json (prepocet.py --vychozi), zdroj/r15/pohyb-R15.json,
+Potřebuje: zdroj/r15/data/ (model.json a vychozi*.json revize R15, zmrazené), zdroj/r15/pohyb-R15.json,
 zdroj/r15/dynamika-R15.json (zdroj/r15/dynamika.py) a node (statika ze stejného jádra jako simulátor)."""
 import sys, os, re, json, subprocess, tempfile, html as H
 TU = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.normpath(os.path.join(TU, '..', '..'))
-KD = os.path.join(ROOT, 'kontrola'); DATA = os.path.join(KD, 'data'); UK = os.path.join(ROOT, 'zdroj', 'uprava-kloubu')
+KD = os.path.join(ROOT, 'kontrola'); UK = os.path.join(ROOT, 'zdroj', 'uprava-kloubu')
+DATA = os.path.join(TU, 'data')   # zmrazená data R15 (model, srovnávací hodnoty)
 VERZE_APLIKACE = '0.4'
 src, out = sys.argv[1], sys.argv[2]
 

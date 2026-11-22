@@ -9,7 +9,8 @@ function r14Engine(K){
  function setEdits(ed){
   edits=ed||{};P=P0.map(p=>p.slice());E=P0.map(()=>[0,0,0]);links=links0.map(l=>l.slice());
   for(const k in edits){const j=+k,e=edits[k];if(!e)continue;const d=e.d||[0,0,0];
-   for(let a=0;a<3;a++){P[j][a]+=d[a];if(e.carry)E[j][a]=d[a]}
+   // E = posun všeho, co na kloubu visí (vlastní vektor u složené úpravy revize, jinak d při „nese další díly“)
+   for(let a=0;a<3;a++){P[j][a]+=d[a];E[j][a]=e.E?(+e.E[a]||0):e.carry?d[a]:0}
    const L=par[j],m=K.servoKg[j];for(let a=0;a<3;a++)links[L][1+a]+=d[a]*m/links[L][0];}
   return {P,E,links};
  }
@@ -121,6 +122,10 @@ function r14Engine(K){
     const dx=Math.max(Math.abs(x)-330,0),dy=Math.max(y,-280-y,0),dz=Math.max(z-210,0);let d;if(dx||dy||dz)d=Math.hypot(dx,dy,dz);else d=-Math.min(-y,y+280,210-z);if(d<env)env=d}}
   return {self:best,env}}
  function fk0(q,root){const sP=P,sE=E;P=P0;E=P0.map(()=>[0,0,0]);const w=fk(q,root);P=sP;E=sE;return w}
- return {setEdits,setClouds,prepClouds,clearance,fk,fk0,frames,com,statics,retarget,jointT,mirror,anc,pos,dir,mat,get P(){return P},get E(){return E},get links(){return links},P0,links0,mtot};
+ // složení úprav: základ revize (zapečené posuny) + úprava uživatele -> jeden posun osy d, posun visících dílů E, natočení
+ function mergeEdits(base,user){const out={};for(const src of [base||{},user||{}])for(const k in src){const e=src[k];if(!e)continue;const d=(e.d||[0,0,0]).map(Number),E=e.E?e.E.map(Number):e.carry?d:[0,0,0];
+   const o=out[k]||(out[k]={d:[0,0,0],E:[0,0,0],rot:0});for(let a=0;a<3;a++){o.d[a]+=d[a];o.E[a]+=E[a]}o.rot+=+(e.rot||0)}
+  return out}
+ return {setEdits,mergeEdits,setClouds,prepClouds,clearance,fk,fk0,frames,com,statics,retarget,jointT,mirror,anc,pos,dir,mat,get P(){return P},get E(){return E},get links(){return links},P0,links0,mtot};
 }
 if(typeof module!=='undefined')module.exports=r14Engine;

@@ -33,7 +33,8 @@ def nacti_geometrii(edits):
             if e.get('rot'):
                 Rr,tr=rot(AX[j],e['rot'],M['P'][j])
                 if it['link']==PAR[j]: v=v@Rr.T+tr
-            if not (e.get('carry') and it['link']==j): v=v+d
+            if 'E' in e: v=v+(d-np.array(e['E'],float) if it['link']==j else d)   # složená úprava (základ revize + úprava)
+            elif not (e.get('carry') and it['link']==j): v=v+d
         kind='sleeve' if it['key']=='r11_climb_TPU' else ('cover' if it['kind']=='cover' else 'body')
         groups.setdefault((it['link'],kind),[]).append((v,f))
     for k,parts in groups.items():

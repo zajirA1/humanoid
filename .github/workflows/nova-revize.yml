@@ -1,0 +1,77 @@
+name: Nová revize
+run-name: Nová revize z přepočtu ${{ inputs.id }}
+
+# Z prošlého přepočtu úpravy kloubů udělá novou revizi robota: zapeče posuny serv do modelu, převezme přizpůsobený
+# pohyb, znovu spustí plnou kontrolu (srovnávací hodnoty), přestaví stránku (posunutá serva, dokreslené úchyty,
+# oddíl revize, verze aplikace +0,1) a výsledek uloží commitem do main. NIC NENASAZUJE – nasazení je zvlášť
+# (Nasazení na Hetzner) a jen na pokyn majitele.
+
+on:
+  workflow_dispatch:
+    inputs:
+      id:
+        description: "Označení přepočtu (složka prepocty/<id> ve větvi prepocty), přepočet musí PROJÍT a být plný"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nova-revize
+  cancel-in-progress: false
+
+jobs:
+  revize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+      - name: Knihovny
+        run: python -m pip install -q numpy scipy python-fcl mujoco
+      - name: Načíst přepočet
+        env:
+          ID: ${{ inputs.id }}
+        run: |
+          [[ "$ID" =~ ^[A-Za-z0-9-]{4,40}$ ]] || { echo "Neplatné označení přepočtu"; exit 1; }
+          git fetch -q origin prepocty
+          mkdir -p "/tmp/prepocet/$ID"
+          for f in uprava.json vysledek.json protokol.md pohyb.json; do
+            git show "origin/prepocty:prepocty/$ID/$f" > "/tmp/prepocet/$ID/$f" 2>/dev/null || rm -f "/tmp/prepocet/$ID/$f"
+          done
+          test -s "/tmp/prepocet/$ID/uprava.json" && test -s "/tmp/prepocet/$ID/vysledek.json" || { echo "Přepočet $ID ve větvi prepocty není"; exit 1; }
+      - name: Nová revize
+        id: rev
+        env:
+          ID: ${{ inputs.id }}
+        run: python3 -I zdroj/revize/nova_revize.py "/tmp/prepocet/$ID" | tee /tmp/revize.log; grep -E '^(REVIZE|VERZE)=' /tmp/revize.log >> "$GITHUB_OUTPUT"
+      - name: Kontrola
+        run: bash .github/kontrola.sh
+      - name: Souhrn
+        run: |
+          echo "## ${{ steps.rev.outputs.REVIZE }} · aplikace ${{ steps.rev.outputs.VERZE }} (nenasazeno)" >> "$GITHUB_STEP_SUMMARY"
+          cat "zdroj/revize/${{ steps.rev.outputs.REVIZE }}/kontrola-revize.md" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: revize-${{ steps.rev.outputs.REVIZE }}
+          path: |
+            web/app/emil-h22.html
+            zdroj/revize/${{ steps.rev.outputs.REVIZE }}/
+          retention-days: 90
+      - name: Uložit do main
+        env:
+          ID: ${{ inputs.id }}
+          REV: ${{ steps.rev.outputs.REVIZE }}
+          VERZE: ${{ steps.rev.outputs.VERZE }}
+        run: |
+          git config user.name "Nová revize"; git config user.email "actions@users.noreply.github.com"
+          git add -A kontrola/data web/app/emil-h22.html zdroj/revize
+          git commit -q -m "$REV – posunutá serva z přepočtu $ID (aplikace $VERZE, nenasazeno)"
+          git push -q origin HEAD:main

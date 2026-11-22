@@ -3,9 +3,11 @@
 const fs=require('fs'),eng=require('./r14engine.js');
 const [,,mp,up,out]=process.argv,M=JSON.parse(fs.readFileSync(mp)),U=JSON.parse(fs.readFileSync(up));
 const ed={};for(const [j,e] of Object.entries(U.upravy||{})){const d=(e.posun_mm||e.d||[0,0,0]).map(Number);if(d.some(Number.isNaN)||d.some(v=>Math.abs(v)>40))throw Error('Neplatný posun u kloubu '+j);ed[+j]={d,carry:!!(e.nese_dalsi_dily??e.carry),rot:+(e.natoceni_serva_deg??e.rot)||0}}
-const mk=mu=>{const e=eng({par:M.PAR,axes:M.AX,P:M.P,links:M.LINKS,lim:M.LIM,mu,servoKg:M.servoKg});e.setEdits(ed);return e};
+// revize vzniklá z úpravy nese zapečené posuny v M.zaklad; úprava uživatele se k nim přičte
+const EDM=eng({par:M.PAR,axes:M.AX,P:M.P,links:M.LINKS,lim:M.LIM,mu:0.5,servoKg:M.servoKg}).mergeEdits(M.zaklad||{},ed);
+const mk=mu=>{const e=eng({par:M.PAR,axes:M.AX,P:M.P,links:M.LINKS,lim:M.LIM,mu,servoKg:M.servoKg});e.setEdits(EDM);return e};
 const E5=mk(0.5),E4=mk(0.4),E3=mk(0.3),E02=mk(0.02),r=x=>x===null?null:Math.round(x*1e5)/1e5;
-const res={edits:ed,P:E5.P,E:E5.E,links:E5.links,frames:[]};const t0=Date.now();
+const res={edits:EDM,uzivatel:ed,P:E5.P,E:E5.E,links:E5.links,frames:[]};const t0=Date.now();
 // volitelně 4. argument: hotové polohy {q,rt} (po doladění) – bez přizpůsobení, jen statika
 const FIX=process.argv[5]?JSON.parse(fs.readFileSync(process.argv[5])):null;
 // přizpůsobení výšce schodu (robot ji změří dotykem dlaní): U.vyska_dh = o kolik je schod vyšší než 210 mm, od M.vyska_od_s s náběhem

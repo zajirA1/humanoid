@@ -37,6 +37,16 @@ pak `python3 -I zdroj/uprava-kloubu/build_r14.py /tmp/r15.html web/app/emil-h22.
 Po změně výchozího pohybu: `python3 -I kontrola/prepocet.py <{}> <výstup> --vychozi`, `pohyb.json` z výstupu do `zdroj/r15/pohyb-R15.json`,
 `python3 -I zdroj/r15/dynamika.py zdroj/r15/pohyb-R15.json zdroj/r15/dynamika-R15.json`, pak obě sestavení. Verze aplikace je v `stranka_r15.py` (`VERZE_APLIKACE`).
 
+## Nová revize z úpravy kloubů
+
+Workflow *Nová revize* (`.github/workflows/nova-revize.yml`, vstup = označení prošlého plného přepočtu) spustí
+`zdroj/revize/nova_revize.py`: posuny serv zapeče do `kontrola/data/model.json` (`zaklad`: d = posun osy a serva, E = posun visících dílů),
+převezme přizpůsobený pohyb (`pohyb.json` z přepočtu), spustí plnou kontrolu s `--vychozi`, přestaví `web/app/emil-h22.html`
+(posunutá serva, dokreslené zjednodušené úchyty, oddíl revize nahoře, verze aplikace +0,1) a commitne do `main`. Podklady revize jsou
+v `zdroj/revize/R<N>/`. Nic nenasazuje; kopii stránky na e2 `revize/H22/R<N>/` a předání dělá Claude/GPT. Smí ho spustit Claude/GPT
+na pokyn majitele. Úpravy v panelu se k zapečeným posunům přičítají (`r14engine.mergeEdits`, `prizpusob.js`). Stránka R15 se staví
+ze zmrazených dat `zdroj/r15/data/`; další revize se nanášejí na hotovou stránku.
+
 ## Přepočet úpravy
 
 Workflow *Přepočet úpravy* smí Claude/GPT spustit kdykoli (nic nenasazuje). Meze verdiktu jsou v `kontrola/prepocet.py`
