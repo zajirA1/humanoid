@@ -1,0 +1,158 @@
+{
+ "verze_kontroly": 1,
+ "proslo": false,
+ "rychla": false,
+ "meze": {
+  "max_vyuziti": 0.85,
+  "mezera_dilu_mm": 9.0,
+  "odstup_schod_mm": 3.0,
+  "posun_opory_mm": 0.5
+ },
+ "upravy": {
+  "8": {
+   "kloub": "Rameno · předozadní pohyb · L",
+   "posun_mm": [
+    -40.0,
+    5.5,
+    4.5
+   ],
+   "nese_dalsi_dily": false,
+   "natoceni_serva_deg": 0.0
+  },
+  "18": {
+   "kloub": "Rameno · předozadní pohyb · P",
+   "posun_mm": [
+    40.0,
+    5.5,
+    4.5
+   ],
+   "nese_dalsi_dily": false,
+   "natoceni_serva_deg": 0.0
+  }
+ },
+ "kontroly": [
+  {
+   "nazev": "Rovnováha ve všech polohách (tření 0,5 / 0,4 / 0,3)",
+   "ok": true,
+   "hodnota": "bez rovnováhy 0 / 0 / 0 z 1141"
+  },
+  {
+   "nazev": "Nejvyšší využití serva ≤ 85 %",
+   "ok": true,
+   "hodnota": "71.1 % (Kyčel · předozadní pohyb · P, 166.2 s)"
+  },
+  {
+   "nazev": "Mezera mezi díly ≥ 9 mm",
+   "ok": false,
+   "hodnota": "8.98 mm (124.2 s)"
+  },
+  {
+   "nazev": "Odstup od podlahy a schodu ≥ 3 mm",
+   "ok": true,
+   "hodnota": "3.27 mm (68.5 s)"
+  },
+  {
+   "nazev": "Opory zůstávají na místě (≤ 0.5 mm)",
+   "ok": true,
+   "hodnota": "0.009 mm"
+  },
+  {
+   "nazev": "Dynamická simulace doběhne (nominální)",
+   "ok": true,
+   "hodnota": "odchylka na konci 8.0 mm"
+  }
+ ],
+ "statika": {
+  "max": 0.71067,
+  "max_s": 166.16666666666666,
+  "max_kloub": "Kyčel · předozadní pohyb · P",
+  "vychozi_max": 0.70278,
+  "bez_rovnovahy": [],
+  "posun_trupu_mm": 2.31121,
+  "posun_opory_mm": 0.0094
+ },
+ "mezery": {
+  "dily_mm": 8.983171726657531,
+  "dily_s": 124.16666666666667,
+  "dily_par": [
+   "L4 body",
+   "L7 body"
+  ],
+  "pod_10mm": 51,
+  "schod_mm": 3.2668541108390983,
+  "schod_s": 68.5,
+  "schod_dil": "L17 body",
+  "pod_5mm": 8,
+  "vychozi_dily_mm": 9.22,
+  "vychozi_schod_mm": 3.262
+ },
+ "dynamika": {
+  "nominal": {
+   "uspech": true,
+   "odchylka_konec_mm": 8.037482143029886,
+   "odchylka_max_mm": 14.503533400074435,
+   "naklon_konec_deg": 0.4655453644909125,
+   "moment_max": 1.0000356900674543,
+   "moment_kloub": "Rameno · předozadní pohyb · P",
+   "pad_s": null,
+   "na_mezi": 0.006849740932642487
+  },
+  "tření 0,35": {
+   "uspech": true,
+   "odchylka_konec_mm": 6.822840686948133,
+   "odchylka_max_mm": 13.676109871217353,
+   "naklon_konec_deg": 1.0208042292193233,
+   "moment_max": 1.0000356900674543,
+   "moment_kloub": "Rameno · předozadní pohyb · P",
+   "pad_s": null,
+   "na_mezi": 0.00744559585492228
+  },
+  "hmotnost +10 %": {
+   "uspech": true,
+   "odchylka_konec_mm": 8.709348045171545,
+   "odchylka_max_mm": 15.574547205487063,
+   "naklon_konec_deg": 0.7145771037781402,
+   "moment_max": 1.0000356900674543,
+   "moment_kloub": "Rameno · předozadní pohyb · P",
+   "pad_s": null,
+   "na_mezi": 0.013155440414507773
+  },
+  "schod 215 mm": {
+   "uspech": false,
+   "odchylka_konec_mm": 780.0526914261334,
+   "odchylka_max_mm": 780.0526914261334,
+   "naklon_konec_deg": 140.9597725563273,
+   "moment_max": 1.0000356900674543,
+   "moment_kloub": "Kotník · boční náklon · P",
+   "pad_s": 26.053,
+   "na_mezi": 0.485419689119171
+  },
+  "o 5 mm blíž": {
+   "uspech": true,
+   "odchylka_konec_mm": 13.04557710660758,
+   "odchylka_max_mm": 18.93193754733491,
+   "naklon_konec_deg": 0.4615160375564251,
+   "moment_max": 1.0000356900674543,
+   "moment_kloub": "Rameno · předozadní pohyb · P",
+   "pad_s": null,
+   "na_mezi": 0.006849740932642487
+  },
+  "serva 85 %": {
+   "uspech": true,
+   "odchylka_konec_mm": 8.964186635422868,
+   "odchylka_max_mm": 15.543145779993791,
+   "naklon_konec_deg": 1.012954124476723,
+   "moment_max": 1.0000416883981187,
+   "moment_kloub": "Rameno · předozadní pohyb · P",
+   "pad_s": null,
+   "na_mezi": 0.026471502590673573
+  }
+ },
+ "mezery_v_simulaci": {
+  "mezera_dilu_mm": 5.273191215731385,
+  "odstup_schod_mm": -0.7588013618808986
+ },
+ "cas_s": 327,
+ "polohy": 1141,
+ "hash_upravy": "20b1302bc2b6"
+}
