@@ -52,6 +52,9 @@ panel='''<aside id="r14" aria-label="Úprava kloubů"><button id="r14Toggle" ari
 <div id="r14Facts"></div>
 <div class="r14-btns"><button class="primary" id="r14RunBtn">Přepočítat</button><button id="r14ResetJoint">Vrátit kloub</button><button id="r14ResetAll">Vrátit vše</button></div>
 <p id="r14Progress" role="status"></p><div id="r14Results"></div>
+<h3 style="margin-top:14px">Plná kontrola v GitHubu</h3><p class="r14-hint">Pohyb jen přizpůsobí (neladí ho znovu), ale přepočítá přelez přesně: statika při třech třeních, přesné mezery ze sítí a dynamická simulace v šesti variantách. Trvá asi 10 minut, nic nenasazuje.</p>
+<label class="r14-check"><input type="checkbox" id="r14Fast"><span>Rychlá kontrola (asi 3 minuty, méně přesná)</span></label>
+<div class="r14-btns"><button class="primary" id="r14SendBtn">Odeslat k přepočtu</button></div><div id="r14Remote"></div>
 <details><summary>Export a import nastavení</summary><div class="r14-btns"><button id="r14ExportBtn">Stáhnout JSON</button><button id="r14ImportBtn">Načíst z textu</button></div><textarea id="r14Json" rows="5" aria-label="Nastavení úprav jako JSON" spellcheck="false"></textarea></details>
 <p class="r14-note">V modelu táhni za kolečko vybraného kloubu. Oranžově je nakreslená vidlice vybraného kloubu, modře vidlice ostatních upravených kloubů, čárkovaně posun osy.</p>
 </div></aside>'''

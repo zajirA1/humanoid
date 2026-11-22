@@ -68,7 +68,7 @@ jobs:
         run: |
           git config user.name "Přepočet úpravy"; git config user.email "actions@users.noreply.github.com"
           for pokus in 1 2 3 4 5; do
-            rm -rf /tmp/p; if git fetch -q origin prepocty 2>/dev/null; then git worktree add -q /tmp/p origin/prepocty; else git worktree add -q --detach /tmp/p; (cd /tmp/p && git checkout -q --orphan prepocty && git rm -rq . ); fi
+            rm -rf /tmp/p; if git fetch -q origin prepocty 2>/dev/null; then git worktree add -q --detach /tmp/p origin/prepocty; else git worktree add -q --orphan -b "prepocty-$pokus-$RANDOM" /tmp/p; fi
             mkdir -p "/tmp/p/prepocty/$ID"; cp vystup/uprava.json vystup/vysledek.json vystup/protokol.md "/tmp/p/prepocty/$ID/"
             (cd /tmp/p && git add -A && git commit -q -m "Přepočet $ID" && git push -q origin HEAD:prepocty) && break
             git worktree remove --force /tmp/p; sleep $((pokus*3))

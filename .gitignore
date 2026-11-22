@@ -4,3 +4,4 @@ web/soukrome/relace/
 __pycache__/
 *.pkl
 .env
+web/soukrome/prepocty.json

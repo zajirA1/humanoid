@@ -144,6 +144,27 @@ function r14Export(){const R=r14Result&&r14Result.ver===r14Ver?r14Result:null,ed
  const txt=JSON.stringify(out,null,1);$('r14Json').value=txt;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));a.download='emil-uprava-kloubu.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
 function r14Import(){try{const o=JSON.parse($('r14Json').value),src=o.upravy||o.edits||{},ed={};for(const [j,e] of Object.entries(src)){const d=(e.posun_mm||e.d||[0,0,0]).map(v=>cl(+v||0,-40,40));if(+j>=0&&+j<22)ed[+j]={d,carry:!!(e.nese_dalsi_dily??e.carry),rot:+(e.natoceni_serva_deg??e.rot)||0}}
   for(const k of Object.keys(ed))if(r14Zero(ed[k]))delete ed[k];r14Edits=ed;r14Ver++;r14Result=null;stop();r14Controls();render();$('r14Progress').textContent='Nastavení načteno.'}catch(err){$('r14Progress').textContent='Text se nepodařilo načíst: '+err.message}}
+// ---------- automatický přepočet v GitHubu (jen na serveru po přihlášení) ----------
+const r14Csrf=document.querySelector('meta[name="robot-csrf"]')?.content||'',r14ApiUrl=document.querySelector('meta[name="robot-api"]')?.content||'';
+let r14PollT=null;
+function r14Payload(){const u={};for(const [j,e] of Object.entries(r14Edits))u[j]={kloub:data.joints[j],posun_mm:e.d,nese_dalsi_dily:!!e.carry,natoceni_serva_deg:e.rot||0};return u}
+async function r14Api(akce,telo){const r=await fetch(r14ApiUrl+'?akce='+akce,{method:telo?'POST':'GET',headers:{'X-Robot-CSRF':r14Csrf,...(telo?{'Content-Type':'application/json'}:{})},body:telo?JSON.stringify(telo):undefined,credentials:'same-origin',cache:'no-store'});
+ let d={};try{d=await r.json()}catch(e){}if(!r.ok)throw Error(d.chyba||('HTTP '+r.status));return d}
+async function r14Send(){const say=t=>{$('r14Progress').textContent=t};if(!r14Has())return say('Nejdřív posuň aspoň jeden kloub.');
+ if(!r14Csrf)return say('Odesílat k přepočtu jde jen ze simulátoru na robot.caribhaus.com po přihlášení.');
+ $('r14SendBtn').disabled=true;try{const d=await r14Api('odeslat',{upravy:r14Payload(),rychle:$('r14Fast').checked});say('Odesláno jako '+d.id+'. Plná kontrola trvá asi 10 minut, výsledek se ukáže níže.');r14List(true)}
+ catch(err){say('Odeslání selhalo: '+err.message)}finally{$('r14SendBtn').disabled=false}}
+function r14Esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c])}
+async function r14List(force){const box=$('r14Remote');if(!r14Csrf){box.innerHTML='<p class="r14-note">Seznam přepočtů je dostupný v simulátoru na robot.caribhaus.com.</p>';return}
+ if(!force&&!r14Open)return;let d;try{d=await r14Api('seznam')}catch(err){box.innerHTML='<p class="r14-stale">'+r14Esc(err.message)+'</p>';return}
+ const L=d.prepocty||[];if(!L.length){box.innerHTML='<p class="r14-note">Zatím žádný přepočet.</p>';return}
+ const stav=p=>p.stav!=='completed'?(p.stav==='ceka'?'čeká na spuštění':'počítá se…'):p.vysledek?(p.vysledek.proslo?'<b class="r14-ok">prošlo</b>':'<b class="r14-bad">neprošlo</b>'):(p.zaver==='success'?'hotovo':'<b class="r14-bad">chyba běhu</b>');
+ box.innerHTML='<table class="r14-t"><thead><tr><th>Přepočet</th><th>Stav</th></tr></thead><tbody>'+L.map((p,i)=>{const v=p.vysledek,kl=Object.values(p.upravy||{}).map(e=>r14Esc(e.kloub)).join(', ');
+  const det=v?('<br>servo max '+fmt(100*(v.statika.max||0),1)+' % · mezera '+fmt(v.mezery.dily_mm,1)+' mm · schod '+fmt(v.mezery.schod_mm,1)+' mm'+(v.kontroly.filter(k=>!k.ok).map(k=>'<br><span class="r14-bad">✗ '+r14Esc(k.nazev)+': '+r14Esc(k.hodnota)+'</span>').join(''))):'';
+  return '<tr><th>'+new Date(p.cas*1000).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})+(p.rychle?' · rychlá':'')+'<br><span class="r14-note">'+kl+'</span></th><td>'+stav(p)+det+
+   '<br><button class="r14-link" data-load="'+i+'">Načíst úpravu</button>'+(p.odkaz?' · <a href="'+r14Esc(p.odkaz)+'" target="_blank" rel="noopener">protokol a stránka návrhu</a>':'')+'</td></tr>'}).join('')+'</tbody></table>';
+ for(const b of box.querySelectorAll('[data-load]'))b.onclick=()=>{const p=L[+b.dataset.load];$('r14Json').value=JSON.stringify({upravy:p.upravy});r14Import()};
+ clearTimeout(r14PollT);if(L.some(p=>p.stav!=='completed'))r14PollT=setTimeout(()=>r14List(),20000)}
 // ---------- wiring ----------
 for(let k=0;k<22;k++)$('r14Joint').add(new Option(data.joints[k],k));$('r14Joint').value=String(r14Sel);
 const r14Pick=()=>{side=r14Sel;$('joint').value=String(side)};
@@ -153,8 +174,8 @@ $('r14Rot').oninput=()=>r14Set(r14Sel,{rot:+$('r14Rot').value});
 $('r14Carry').onchange=()=>r14Set(r14Sel,{carry:$('r14Carry').checked});
 $('r14ResetJoint').onclick=()=>r14Set(r14Sel,{d:[0,0,0],rot:0,carry:false});
 $('r14ResetAll').onclick=()=>{r14Edits={};r14Ver++;r14Result=null;stop();r14Controls();render()};
-$('r14RunBtn').onclick=r14Run;$('r14ExportBtn').onclick=r14Export;$('r14ImportBtn').onclick=r14Import;
-$('r14Toggle').onclick=()=>{r14Open=!r14Open;$('r14').classList.toggle('open',r14Open);$('r14Toggle').setAttribute('aria-expanded',String(r14Open));r14Controls();render(true)};
+$('r14RunBtn').onclick=r14Run;$('r14SendBtn').onclick=r14Send;$('r14ExportBtn').onclick=r14Export;$('r14ImportBtn').onclick=r14Import;
+$('r14Toggle').onclick=()=>{r14Open=!r14Open;$('r14').classList.toggle('open',r14Open);if(r14Open)r14List(true);$('r14Toggle').setAttribute('aria-expanded',String(r14Open));r14Controls();render(true)};
 $('r8Assembly').addEventListener('change',()=>setTimeout(r14Controls,0));
 r14Ready=true;
 // Revize z automatického přepočtu: stránka se otevře s úpravou, ze které vznikla

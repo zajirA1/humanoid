@@ -3,31 +3,20 @@ declare(strict_types=1);
 // Humanoid – přihlášení jedním heslem a vydání simulátoru. Heslo (otisk) je v soukrome/tajne.php,
 // který vytváří workflow „Nasazení na Hetzner“ z tajné hodnoty ROBOT_HESLO. V repozitáři není.
 
-header('X-Robots-Tag: noindex, nofollow, noarchive');
-header('Referrer-Policy: same-origin');
-header('X-Content-Type-Options: nosniff');
+require __DIR__ . '/soukrome/jadro.php';
+robot_hlavicky();
 
-const DNY_PRIHLASENI = 14;
 const MAX_POKUSU = 8;        // chybných pokusů z jedné adresy
 const OKNO_POKUSU = 900;     // za 15 minut
 
 $soukrome = __DIR__ . '/soukrome';
-$tajne = is_file($soukrome . '/tajne.php') ? require $soukrome . '/tajne.php' : null;
-if (!is_array($tajne) || empty($tajne['hash'])) {
+$tajne = robot_tajne();
+if ($tajne === null) {
     http_response_code(503);
     header('Content-Type: text/plain; charset=utf-8');
     exit('Heslo zatím není nastavené. Spusť nasazení z GitHubu s tajnou hodnotou ROBOT_HESLO.');
 }
-
-$relace = $soukrome . '/relace';
-if (!is_dir($relace)) { @mkdir($relace, 0700, true); }
-if (is_dir($relace) && is_writable($relace)) { session_save_path($relace); }
-ini_set('session.gc_maxlifetime', (string) (DNY_PRIHLASENI * 86400));
-ini_set('session.use_strict_mode', '1');
-session_name('ROBOTSID');
-// Bez „domain“ – cookie platí jen pro tuto subdoménu, ne pro caribhaus.com ani jiné subdomény.
-session_set_cookie_params(['lifetime' => DNY_PRIHLASENI * 86400, 'path' => '/', 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
-session_start();
+robot_relace();
 
 function pokusy_soubor(string $soukrome): string { return $soukrome . '/pokusy.json'; }
 function pokusy_nacti(string $soukrome): array {
@@ -71,9 +60,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && empty($_SESSION['ok'])) 
 if (!empty($_SESSION['ok'])) {
     $soubor = __DIR__ . '/app/emil-h22.html';
     if (!is_file($soubor)) { http_response_code(500); exit('Soubor simulátoru na serveru chybí.'); }
+    if (empty($_SESSION['csrf'])) { $_SESSION['csrf'] = bin2hex(random_bytes(16)); }
     header('Content-Type: text/html; charset=utf-8');
-    header('Cache-Control: private, max-age=300');
-    readfile($soubor);
+    header('Cache-Control: private, no-cache');
+    // Klíč pro odesílání přepočtu (api.php) – vkládá se do stránky až po přihlášení.
+    $meta = '<meta name="robot-csrf" content="' . htmlspecialchars((string) $_SESSION['csrf'], ENT_QUOTES) . '"><meta name="robot-api" content="api.php">';
+    $html = (string) file_get_contents($soubor);
+    $i = strpos($html, '</head>');
+    echo $i === false ? $meta . $html : substr($html, 0, $i) . $meta . substr($html, $i);
     exit;
 }
 

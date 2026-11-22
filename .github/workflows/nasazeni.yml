@@ -3,7 +3,8 @@ name: Nasazení na Hetzner
 # Spouští jen majitel ručně: Actions → Nasazení na Hetzner → Run workflow.
 # Režim „zkouska“ nic nenahrává, jen vypíše, co by se nahrálo. Nic se nenasazuje samo.
 #
-# Secrets:   FTP_USERNAME, FTP_PASSWORD (FTP účet omezený jen na složku humanoida), ROBOT_HESLO (heslo do simulátoru, min. 10 znaků)
+# Secrets:   FTP_USERNAME, FTP_PASSWORD (FTP účet omezený jen na složku humanoida), ROBOT_HESLO (heslo do simulátoru, min. 10 znaků),
+#            PREPOCET_TOKEN (nepovinný: token GitHubu jen pro repozitář humanoid, Actions: read and write, Contents: read)
 # Variables: FTP_SERVER (výchozí www748.your-server.de), FTP_SERVER_DIR (výchozí /, vždy s lomítkem na konci)
 
 on:
@@ -31,6 +32,7 @@ jobs:
       FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
       LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
       ROBOT_HESLO: ${{ secrets.ROBOT_HESLO }}
+      PREPOCET_TOKEN: ${{ secrets.PREPOCET_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - name: Kontrola
@@ -47,7 +49,8 @@ jobs:
           case "$FTP_SERVER_DIR" in */) ;; *) echo "FTP_SERVER_DIR musí končit lomítkem"; exit 1;; esac
       - name: Otisk hesla (vzniká jen tady, do repozitáře se nedostane)
         run: |
-          php -r 'file_put_contents("web/soukrome/tajne.php","<?php return ".var_export(["hash"=>password_hash(getenv("ROBOT_HESLO"),PASSWORD_DEFAULT)],true).";\n");'
+          php -r 'file_put_contents("web/soukrome/tajne.php","<?php return ".var_export(["hash"=>password_hash(getenv("ROBOT_HESLO"),PASSWORD_DEFAULT),"gh"=>(string)getenv("PREPOCET_TOKEN")],true).";\n");'
+          [ -n "$PREPOCET_TOKEN" ] || echo "::warning::Secret PREPOCET_TOKEN chybí – tlačítko Odeslat k přepočtu v simulátoru nebude fungovat."
           php -l web/soukrome/tajne.php
       - name: lftp
         run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
@@ -70,7 +73,7 @@ jobs:
           lftp --env-password -u "$FTP_USERNAME" "$FTP_SERVER" -e "
             set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate true;
             set net:max-retries 3; set net:timeout 30; set cmd:fail-exit true;
-            mirror -R $ZK --verbose --no-perms --exclude-glob soukrome/relace/ --exclude-glob soukrome/pokusy.json web/ $FTP_SERVER_DIR;
+            mirror -R $ZK --verbose --no-perms --exclude-glob soukrome/relace/ --exclude-glob soukrome/pokusy.json --exclude-glob soukrome/prepocty.json web/ $FTP_SERVER_DIR;
             bye"
       - name: Souhrn
         run: echo "Režim ${{ inputs.rezim }} · commit ${GITHUB_SHA::7} · cíl $FTP_SERVER$FTP_SERVER_DIR" >> "$GITHUB_STEP_SUMMARY"
