@@ -56,11 +56,13 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
       - name: Pojistka – cílová složka musí patřit jen humanoidovi
         run: |
-          lftp --env-password -u "$FTP_USERNAME" "$FTP_SERVER" -e "
-            set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate true; set cmd:fail-exit true;
-            cls -1a $FTP_SERVER_DIR; bye" > obsah.txt 2> chyba.txt || {
-              cat chyba.txt; echo "::error::Přihlášení k FTP selhalo nebo cílová složka neexistuje. Zkontroluj secrets FTP_USERNAME a FTP_PASSWORD (konsoleH → FTP účty) a proměnnou FTP_SERVER_DIR."; exit 1; }
-          if grep -q -i "login failed\|530" chyba.txt; then cat chyba.txt; echo "::error::Server odmítl přihlášení k FTP."; exit 1; fi
+          # Výpis přes curl (FTPS) – lftp na tomto serveru vrací prázdný výpis
+          if ! curl -sS --fail --ssl-reqd --list-only --user "$FTP_USERNAME:$LFTP_PASSWORD" "ftp://$FTP_SERVER/${FTP_SERVER_DIR#/}" > obsah.txt 2> chyba.txt; then
+            cat chyba.txt; echo "::error::Přihlášení k FTP selhalo nebo cílová složka neexistuje. Zkontroluj secrets FTP_USERNAME a FTP_PASSWORD a proměnnou FTP_SERVER_DIR."; exit 1; fi
+          sed -i 's/\r$//' obsah.txt
+          # Po prvním nasazení musí být ve složce index.php – jinak výpis nefunguje a pojistka by nic nekontrolovala
+          # Humanoid je na serveru od 22. 11. 2026 – složka bez index.php znamená špatnou složku nebo nefunkční výpis
+          if ! grep -qx 'index.php' obsah.txt; then echo "::error::V cílové složce není index.php humanoida (nebo nejde vypsat). Nasazení zastaveno."; cat obsah.txt; exit 1; fi
           echo "Obsah cílové složky:"; cat obsah.txt
           if grep -E -i '(^|/)(public_html|kliphaus|caribhaus|harmonie|jogaseberozvoje|sunbeha|kliphaus-data|caribhaus-poptavky|logs|backup)/?$' obsah.txt; then
             echo "::error::Cílová složka obsahuje jiné weby – FTP účet není omezený jen na humanoida. Nasazení zastaveno."; exit 1; fi
