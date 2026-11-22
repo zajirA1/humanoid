@@ -131,13 +131,13 @@ def main():
     Cl['summaryCs'] = (f'{rev}: přelez schodu 21 cm má nejmenší mezeru mezi díly {cz(V["self"][smin], 2)} mm a odstup od schodu {cz(V["env"][emin], 2)} mm '
                        f'(přesný výpočet ze sítí v automatické kontrole, s posunutými servy). Rozpis po jednotlivých dílech níže je z R13. ' + Cl['summaryCs'])
     s = set_block(s, 'r12ClearanceData', Cl)
-    H = P14.get('historie') or []
-    for h in H:
+    HIST = P14.get('historie') or []
+    for h in HIST:
         if h.get('aktualni'):
             h['aktualni'] = False; h.update(q=stare_q, rt=stare_rt, zaklad=M.get('zaklad', {}))
-    H.append(dict(rev=rev, datum=datetime.date.today().isoformat(), popis=f'Posunutá serva z přepočtu {idp}: {kl}.', max=round(ratios[k], 4), self=round(V['self'][smin], 2),
+    HIST.append(dict(rev=rev, datum=datetime.date.today().isoformat(), popis=f'Posunutá serva z přepočtu {idp}: {kl}.', max=round(ratios[k], 4), self=round(V['self'][smin], 2),
                   env=round(V['env'][emin], 2), dyn=f"{sum(bool(v.get('uspech')) for v in R2['dynamika'].values())}/{len(R2['dynamika'])} variant doběhne", zaklad=zaklad, aktualni=True))
-    P14['historie'] = H
+    P14['historie'] = HIST
     P14.update(ref=ratios, selfBase=[round(v, 3) for v in V['self']], envBase=[round(v, 3) for v in V['env']], revize=rev, zaklad=zaklad, hz=HZ,
                vyska_od_s=M2.get('vyska_od_s', 30.0), vyska_nabeh_s=M2.get('vyska_nabeh_s', 2.0))
     s = set_block(s, 'r14Data', P14)

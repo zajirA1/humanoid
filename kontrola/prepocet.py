@@ -176,6 +176,12 @@ def main():
         z=doladeni.dolad(F,M,P,E,G,pairs,fk,selfd,CIL_DOLADENI,STEP,log=log,cil_env=MEZE['odstup_schod_mm']+0.5,envd=envd)
         if not z: break
         zasahy+=z; selfd,envd=projdi(); log('kolo',kolo+1,'mezery',round(min(x[0] for x in selfd),2),round(min(x[0] for x in envd),2))
+    # když úsekové doladění nestačí (dlouhý švih přes hranu), dolaď těsné polohy volné končetiny jednotlivě a vyhlaď
+    for kolo in range(2):
+        if min(x[0] for x in selfd)>=CIL_DOLADENI and min(x[0] for x in envd)>=MEZE['odstup_schod_mm']+0.5: break
+        z=doladeni.dolad_po_polohach(F,M,P,E,G,pairs,fk,selfd,envd,CIL_DOLADENI,STEP,log=log,cil_env=MEZE['odstup_schod_mm']+0.5)
+        if not z: break
+        zasahy+=z; selfd,envd=projdi(); log('po polohách',kolo+1,'mezery',round(min(x[0] for x in selfd),2),round(min(x[0] for x in envd),2))
     if zasahy:
         fix=dict(q=[f['q'] for f in F],rt=[f['rt'] for f in F],drift=[f['drift'] for f in F],shift=[f['shift'] for f in F])
         fp=os.path.join(outdir,'_polohy.json'); json.dump(fix,open(fp,'w'))

@@ -1,7 +1,7 @@
 """Doladění volných končetin: v úsecích, kde je mezera pod cílem a těsná dvojice patří volné (neopřené) noze nebo ruce,
 se klouby té končetiny pootočí o jednu společnou změnu s plynulým náběhem a doběhem (bez skoků). Opory, trup ani opřené
 končetiny se nemění; během úseku musí být končetina celou dobu volná. Cíl: nejmenší mezera v celém úseku ≥ cil."""
-import numpy as np, fcl
+import os, numpy as np, fcl
 from scipy.optimize import minimize
 KONCETINY={'L_noha':dict(j=[2,3,4,5,6,7],links={2,3,4,5,6,7},opora={'leftFoot','leftKnee'}),
            'P_noha':dict(j=[12,13,14,15,16,17],links={12,13,14,15,16,17},opora={'rightFoot','rightKnee'}),
@@ -75,3 +75,51 @@ def dolad(F,M,P_,E_,G,pairs,fk,selfd,cil,STEP,log=print,cil_env=3.5,envd=None):
             zasah.append(dict(koncetina=k,od=int(lo),do=int(hi),pred=float(m0),po=float(m1),zmena=[round(float(v),2) for v in r.x]))
             log(f'{k} {lo/6:.1f}–{hi/6:.1f} s: rezerva vůči cíli {m0-cil:+.2f} → {m1-cil:+.2f} mm, změna úhlů {np.round(r.x,1).tolist()}°')
     return zasah
+
+
+def dolad_po_polohach(F,M,P_,E_,G,pairs,fk,selfd,envd,cil,STEP,log=print,cil_env=3.5,MAXP=10.0):
+    """Záloha, když jedna společná změna úseku nestačí (dlouhý švih přes hranu schodu): těsné polohy volné končetiny
+    se dolaďují jednotlivě (≤ MAXP °) v několika kolech, změny se vyhlazují v čase (bez skoků) a ponechají se jen tehdy,
+    když se celé okno zlepší. Odstup od schodu se zvedá k cil_env + 1,5 mm, mezera dílů nesmí klesnout pod min(dosavadní, cil)."""
+    from scipy.ndimage import gaussian_filter1d
+    n=len(F); ex_of=lambda i:{k for k,b in (((7,'body'),1),((17,'body'),2),((5,'sleeve'),4),((15,'sleeve'),8)) if M['ex'][i]&b}
+    zasah=[]; cilm=cil+1.0
+    for k,K in KONCETINY.items():
+        links=K['links']; J=K['j']; nJ=len(J)
+        spatne=set(i for d,i,bp in selfd if d<cil and bp and volna(k,M['support'][i]) and (bp[0][0] in links or bp[1][0] in links))
+        spatne|=set(i for e,i,ek in envd if e<cil_env and ek and ek[0] in links and volna(k,M['support'][i]))
+        if not spatne: continue
+        mypairs=[(a,b) for a,b in pairs if a[0] in links or b[0] in links]
+        lo=max(0,min(spatne)-12); hi=min(n-1,max(spatne)+12)
+        idx=[i for i in range(lo,hi+1) if volna(k,M['support'][i])]
+        q0={i:list(F[i]['q']) for i in range(lo,hi+1)}
+        m_=lambda i,X:min_koncetiny(G,mypairs,links,fk(_q(q0[i],J,X[i-lo]),F[i]['rt'],P_,E_),STEP,ex_of(i),cilm+1,cil-cil_env)
+        sam=lambda i,x:min_koncetiny(G,mypairs,links,fk(_q(q0[i],J,x),F[i]['rt'],P_,E_),STEP,ex_of(i),cil+3,1e3)
+        okoli=lambda i,x:min_koncetiny(G,[],links,fk(_q(q0[i],J,x),F[i]['rt'],P_,E_),STEP,ex_of(i),cil_env+3,0.0)
+        mask=np.array([1.0 if (lo+t) in idx else 0.0 for t in range(hi-lo+1)]); mk=(gaussian_filter1d(mask,1.0,mode='constant')*mask)[:,None]
+        X=np.zeros((hi-lo+1,nJ)); okno=lambda X:min(m_(i,X) for i in idx)
+        pred=okno(X); best=(pred,X.copy())
+        Z=np.zeros(nJ)
+        for kolo in range(3):
+            # všechny polohy okna; spojitost se sousedy (předchozí z tohoto kola, následující z minulého) místo vyhlazení
+            Y=X.copy()
+            for i in idx:
+                t=i-lo; pv=Y[t-1] if t>0 and (i-1) in idx else Z; nx=X[t+1] if t+1<len(X) and (i+1) in idx else Z
+                s0=min(sam(i,Z),cil); te=cil_env+1.5; potreba=okoli(i,Z)<te or sam(i,Z)<cil
+                f=lambda x:-min(okoli(i,x),te)+10*max(0.0,s0-sam(i,x))+(0.005 if potreba else 0.03)*float(x@x)+0.06*(float((x-pv)@(x-pv))+float((x-nx)@(x-nx)))
+                Y[t]=minimize(f,X[t] if kolo else pv,method='Powell',bounds=[(-MAXP,MAXP)]*nJ,options=dict(xtol=0.05,maxfev=300)).x
+            for t in range(len(Y)):
+                if not mask[t]: Y[t]=0
+            X=np.clip(Y,-MAXP,MAXP)
+            m=okno(X)
+            if m>best[0]+0.02: best=(m,X.copy())
+            if best[0]>=cilm-0.5: break
+        if best[0]<=pred+0.05:
+            log(f'{k} {lo/6:.1f}–{hi/6:.1f} s po polohách: nepomohlo ({pred-cil:+.2f} mm)'); continue
+        X=best[1]
+        for i in range(lo,hi+1): F[i]['q']=list(map(float,_q(q0[i],J,X[i-lo])))
+        zasah.append(dict(koncetina=k,od=int(lo),do=int(hi),pred=float(pred),po=float(best[0]),zmena=[round(float(v),2) for v in np.abs(X).max(axis=0)],po_polohach=True))
+        log(f'{k} {lo/6:.1f}–{hi/6:.1f} s po polohách: rezerva okna vůči cíli {pred-cil:+.2f} → {best[0]-cil:+.2f} mm, největší změna {float(np.abs(X).max()):.1f}°')
+    return zasah
+def _q(q,J,x):
+    q=np.array(q,float); q[J]+=x; return q
