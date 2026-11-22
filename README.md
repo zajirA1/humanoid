@@ -15,6 +15,10 @@ vydá jeden soubor. Běží na Hetzner Webhostingu (bez SSH), cílová adresa `r
 
 Velké soubory (3MF, výsledky simulací, mezivýsledky) jsou na IDrive e2 v `ai-projekty/Humanoid/`.
 
+## Předávání mezi Claudem a GPT
+
+Pravidla v `CLAUDE.md` / `AGENTS.md`. Platný stav projektu: e2 `ai-projekty/Humanoid/AKTUALNI_STAV.md`, předání v `Humanoid/K_PREVZETI/`.
+
 ## Nasazení
 
 Ručně z GitHubu: **Actions → Nasazení na Hetzner → Run workflow**, nejdřív `zkouska`, pak `nasazeni`.

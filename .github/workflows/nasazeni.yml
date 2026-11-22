@@ -55,12 +55,14 @@ jobs:
         run: |
           lftp --env-password -u "$FTP_USERNAME" "$FTP_SERVER" -e "
             set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate true; set cmd:fail-exit true;
-            cls -1a $FTP_SERVER_DIR; bye" > obsah.txt || true
+            cls -1a $FTP_SERVER_DIR; bye" > obsah.txt 2> chyba.txt || {
+              cat chyba.txt; echo "::error::Přihlášení k FTP selhalo nebo cílová složka neexistuje. Zkontroluj secrets FTP_USERNAME a FTP_PASSWORD (konsoleH → FTP účty) a proměnnou FTP_SERVER_DIR."; exit 1; }
+          if grep -q -i "login failed\|530" chyba.txt; then cat chyba.txt; echo "::error::Server odmítl přihlášení k FTP."; exit 1; fi
           echo "Obsah cílové složky:"; cat obsah.txt
           if grep -E -i '(^|/)(public_html|kliphaus|caribhaus|harmonie|jogaseberozvoje|sunbeha|kliphaus-data|caribhaus-poptavky|logs|backup)/?$' obsah.txt; then
             echo "::error::Cílová složka obsahuje jiné weby – FTP účet není omezený jen na humanoida. Nasazení zastaveno."; exit 1; fi
           if grep -q -E '(^|/)(wp-config\.php|crm|obchod)/?$' obsah.txt; then echo "::error::Cílová složka vypadá jako jiný web. Nasazení zastaveno."; exit 1; fi
-          rm -f obsah.txt
+          rm -f obsah.txt chyba.txt
       - name: ${{ inputs.rezim == 'nasazeni' && 'Nahrání na server' || 'Zkouška (nic se nenahrává)' }}
         run: |
           ZK=""; [ "${{ inputs.rezim }}" = "nasazeni" ] || ZK="--dry-run"
