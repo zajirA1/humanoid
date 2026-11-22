@@ -1,0 +1,12 @@
+name: Kontrola
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  kontrola:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: bash .github/kontrola.sh

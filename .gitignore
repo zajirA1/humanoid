@@ -1,0 +1,6 @@
+web/soukrome/tajne.php
+web/soukrome/pokusy.json
+web/soukrome/relace/
+__pycache__/
+*.pkl
+.env
