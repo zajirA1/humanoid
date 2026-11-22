@@ -47,7 +47,7 @@ Postup a nálezy:
 Závěr: jednoduché regulátory nad pozičními servy s plánem R13 robustnost nezvýšily. Další možnosti: regulace síly v oporách přes QP
 (rozdělení sil + momenty kloubů), nebo nový plán přelezu s vyrovnaným zatížením opor ve fázích na třech oporách (nejlépe obojí).
 
-## Čtvrté kolo (19:00–22:30) – nový plán s vyrovnanými oporami + přizpůsobení výšce → revize R15
+## Čtvrté kolo (22. 11., večer) – nový plán s vyrovnanými oporami + přizpůsobení výšce → revize R15
 
 Skripty (cesty počítají s pracovní složkou `/tmp/plan`, kopie R13 = `model_R13.json` z commitu 8529369):
 `posun2.js` (dávkové přizpůsobení s posunem trupu `off`, posunem cíle dlaně/chodidla `shift`, zdvihem nad schodem `lift`),
