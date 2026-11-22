@@ -1,0 +1,25 @@
+{
+ "model": "Emil H22 R13",
+ "upravy": {
+  "8": {
+   "kloub": "Rameno · předozadní pohyb · L",
+   "posun_mm": [
+    -40.0,
+    0.5,
+    0.0
+   ],
+   "nese_dalsi_dily": false,
+   "natoceni_serva_deg": 0.0
+  },
+  "18": {
+   "kloub": "Rameno · předozadní pohyb · P",
+   "posun_mm": [
+    40.0,
+    0.5,
+    0.0
+   ],
+   "nese_dalsi_dily": false,
+   "natoceni_serva_deg": 0.0
+  }
+ }
+}
