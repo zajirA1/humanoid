@@ -3,7 +3,7 @@
 Soukromý prohlížeč a simulátor humanoida Emil H22. Vše se počítá v prohlížeči, server jen po přihlášení
 vydá jeden soubor. Běží na Hetzner Webhostingu (bez SSH), cílová adresa `robot.caribhaus.com`.
 
-Číslování: **aplikace** a **revize robota** zvlášť. Teď: aplikace 0.4 (stránka převedená na R15, číslo verze v záhlaví); dříve 0.3 (přepočet úpravy v GitHubu), 0.2 · robot H22 R15 (přelez schodu 21 cm s vyrovnanějšími oporami a přizpůsobením výšce; vychází z R13) + R14 (úprava kloubů v modelu).
+Číslování: **aplikace** a **revize robota** zvlášť. Teď: aplikace 0.5 (audit: výška schodu v modelu, historie revizí, zpět/vpřed a uložení úprav, oznámení, úchyty v 3MF, lehčí stránka – data Konda až při otevření, mobil); dříve 0.4 (stránka převedená na R15, číslo verze v záhlaví), 0.3 (přepočet úpravy v GitHubu), 0.2 · robot H22 R15 (přelez schodu 21 cm s vyrovnanějšími oporami a přizpůsobením výšce; vychází z R13) + R14 (úprava kloubů v modelu).
 
 | Složka | Co v ní je |
 |---|---|
@@ -46,7 +46,7 @@ bash .github/kontrola.sh     hesla v repozitáři, PHP, výpočet sil proti refe
 
 ## Známá omezení
 
-- Simulátor je jeden soubor HTML o 14,9 MB. Sestavuje se ze stránky R13 dvěma skripty (`zdroj/r15/stranka_r15.py`,
+- Simulátor je soubor HTML o 11,6 MB (zabalený 3,4 MB) + `web/app/kondo-data.json` (3,7 MB, stahuje se přes `index.php?data=kondo` až při otevření prohlížeče Konda). Sestavuje se ze stránky R13 dvěma skripty (`zdroj/r15/stranka_r15.py`,
   `zdroj/uprava-kloubu/build_r14.py`, postup v `CLAUDE.md`); rozdělení na kód a data zatím není hotové.
 - Rozpis mezer po jednotlivých dílech (dialog Mezery dílů) a podrobná zpráva R13 jsou z R13; R15 se liší jen ve fázi 3 a souhrnné hodnoty R15 jsou v oddílu R15.
 - Skripty ve `vypocty/` (původní hledání pohybu R13) mají cesty natvrdo (`/home/claude/sim`, `/home/claude/work`) a potřebují data

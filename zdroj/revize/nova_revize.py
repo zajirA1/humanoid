@@ -105,6 +105,7 @@ def main():
     m = re.search(r'APLIKACE (\d+)\.(\d+)', s); va = f'{m.group(1)}.{int(m.group(2)) + 1}'
     Lold = get_block(s, 'r9LoadsData'); rprev = [l['ratio'] for l in Lold['climb']['loads']]
     C = get_block(s, 'r9ClimbData')
+    stare_q = [[round(float(v), 4) for v in p['q']] for p in C['poses']]; stare_rt = [[round(float(v), 5) for v in p['rt']] for p in C['poses']]
     for i, p in enumerate(C['poses']): p['q'] = [round(float(x), 6) for x in Q['q'][i]]; p['rt'] = [round(float(x), 9) for x in Q['rt'][i]]
     s = set_block(s, 'r9ClimbData', C)
     loads = []
@@ -130,7 +131,15 @@ def main():
     Cl['summaryCs'] = (f'{rev}: přelez schodu 21 cm má nejmenší mezeru mezi díly {cz(V["self"][smin], 2)} mm a odstup od schodu {cz(V["env"][emin], 2)} mm '
                        f'(přesný výpočet ze sítí v automatické kontrole, s posunutými servy). Rozpis po jednotlivých dílech níže je z R13. ' + Cl['summaryCs'])
     s = set_block(s, 'r12ClearanceData', Cl)
-    P14.update(ref=ratios, selfBase=[round(v, 3) for v in V['self']], envBase=[round(v, 3) for v in V['env']], revize=rev, zaklad=zaklad)
+    H = P14.get('historie') or []
+    for h in H:
+        if h.get('aktualni'):
+            h['aktualni'] = False; h.update(q=stare_q, rt=stare_rt, zaklad=M.get('zaklad', {}))
+    H.append(dict(rev=rev, datum=datetime.date.today().isoformat(), popis=f'Posunutá serva z přepočtu {idp}: {kl}.', max=round(ratios[k], 4), self=round(V['self'][smin], 2),
+                  env=round(V['env'][emin], 2), dyn=f"{sum(bool(v.get('uspech')) for v in R2['dynamika'].values())}/{len(R2['dynamika'])} variant doběhne", zaklad=zaklad, aktualni=True))
+    P14['historie'] = H
+    P14.update(ref=ratios, selfBase=[round(v, 3) for v in V['self']], envBase=[round(v, 3) for v in V['env']], revize=rev, zaklad=zaklad, hz=HZ,
+               vyska_od_s=M2.get('vyska_od_s', 30.0), vyska_nabeh_s=M2.get('vyska_nabeh_s', 2.0))
     s = set_block(s, 'r14Data', P14)
     # texty
     s = sub1(s, r'<title>Emil H22 R\d+ · [^<]*</title>', f'<title>Emil H22 {rev} · přelez schodu 21 cm, posunutá serva</title>')
@@ -172,6 +181,7 @@ def main():
 <div class="r13-kpi"><span>Mezera mezi díly</span><b>{cz(V["self"][smin], 1)} mm</b><small>{prev}: {cz(min(stare["vychozi.json"]["self"]), 1)} mm · mez 9 mm</small></div>
 <div class="r13-kpi"><span>Odstup dílů od schodu</span><b>{cz(V["env"][emin], 1)} mm</b><small>{prev}: {cz(min(stare["vychozi.json"]["env"]), 1)} mm · mez 3 mm</small></div>
 <div class="r13-kpi"><span>Slabá místa rovnováhy</span><b>{slab(rn)} poloh</b><small>{prev}: {slab(rp)}</small></div></div>
+<details class="rev-more"><summary>Celá zpráva {rev} – graf, posunutá serva, kontroly, dynamika a předchozí revize</summary>
 <div class="r13-chartwrap"><div class="r13-legend"><span><i style="background:#c2571a"></i>{prev}</span><span><i style="background:#2a78d6"></i>{rev}</span><span style="color:#5d6f67">Využití nejzatíženějšího serva během přelezu, 100 % = pracovní moment.</span></div>{svg}<div id="{pid}Tip" class="rev-tip"></div></div>
 <details open><summary>Posunutá serva</summary><div class="r13-scroll"><table><thead><tr><th>Kloub</th><th>Posun do strany / dozadu / nahoru, mm</th><th>Posunout i visící díly</th></tr></thead><tbody>{rows_j}</tbody></table></div>
 <p>Posun je v základní poloze robota: x + k levému boku, y + dozadu, z + nahoru. Další úpravy v panelu Úprava kloubů se k těmto posunům přičítají.</p></details>
@@ -199,7 +209,7 @@ def main():
     for mm in re.finditer(r'<section\b|</section>', s[i0:]):
         depth += 1 if mm.group(0) != '</section>' else -1
         if depth == 0: pos = i0 + mm.end(); break
-    s = s[:i0] + ('' if '.rev-sec{' in s else css) + sec + s[i0:pos] + '</details></section>' + f'<script type="application/json" id="{pid}Data">' + json.dumps(D, separators=(',', ':')) + '</script>' + s[pos:]
+    s = s[:i0] + ('' if '.rev-sec{' in s else css) + sec + s[i0:pos] + '</details></details></section>' + f'<script type="application/json" id="{pid}Data">' + json.dumps(D, separators=(',', ':')) + '</script>' + s[pos:]
     s = sub1(s, r"choose\('climb'\);", "choose('climb');" + JS)
     open(STRANKA, 'w', encoding='utf-8').write(s)
     info = dict(revize=rev, predchozi=prev, prepocet=idp, verze_aplikace=va, datum=datetime.datetime.now().isoformat(timespec='seconds'), upravy=U['upravy'], zaklad=zaklad,

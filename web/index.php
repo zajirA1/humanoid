@@ -57,6 +57,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && empty($_SESSION['ok'])) 
     }
 }
 
+if (!empty($_SESSION['ok']) && ($_GET['data'] ?? '') === 'kondo') {
+    // data prohlížeče Kondo (3,7 MB) se stahují až při jeho otevření, ne s každým načtením simulátoru
+    $f = __DIR__ . '/app/kondo-data.json';
+    if (!is_file($f)) { http_response_code(404); exit; }
+    $etag = '"' . sha1(filemtime($f) . ':' . filesize($f)) . '"';
+    header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: private, max-age=86400'); header('ETag: ' . $etag);
+    if (str_replace('-gzip', '', trim((string) ($_SERVER['HTTP_IF_NONE_MATCH'] ?? ''))) === $etag) { http_response_code(304); exit; }
+    readfile($f); exit;
+}
+
 if (!empty($_SESSION['ok'])) {
     $soubor = __DIR__ . '/app/emil-h22.html';
     if (!is_file($soubor)) { http_response_code(500); exit('Soubor simulátoru na serveru chybí.'); }

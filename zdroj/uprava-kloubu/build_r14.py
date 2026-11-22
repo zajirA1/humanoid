@@ -32,6 +32,7 @@ body.kondo-active #r14{display:none}
 #r14 .r14-btns{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}#r14 .r14-btns button{font:inherit;padding:6px 10px;border:1px solid #c9c1b2;border-radius:7px;background:#fff;color:inherit;cursor:pointer}#r14 .r14-btns button.primary{background:#1f2a30;color:#fff;border-color:#1f2a30;font-weight:600}
 #r14Facts{margin:8px 0;border-top:1px solid #e6dfd2}#r14Facts div{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid #e6dfd2}#r14Facts span{color:#5c6a70}#r14Facts b{font-weight:600;text-align:right}
 #r14 .r14-facts{margin:4px 0 8px;border-top:1px solid #e6dfd2}#r14 .r14-facts div{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid #e6dfd2}#r14 .r14-facts span{color:#5c6a70}#r14 .r14-facts b{font-weight:600;text-align:right}
+#r14Toast{position:fixed;top:12px;right:12px;z-index:80;display:flex;flex-direction:column;gap:8px;max-width:min(380px,calc(100vw - 24px));font:13.5px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}.r14-toast{background:#193733;color:#fff;border-radius:9px;padding:10px 36px 10px 13px;position:relative;box-shadow:0 6px 20px rgba(0,0,0,.25)}.r14-toast.bad{background:#8a2f22}.r14-toast button{position:absolute;right:6px;top:5px;background:none;border:0;color:#fff;font-size:18px;cursor:pointer}#r14Hist table{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0}#r14Hist th,#r14Hist td{text-align:left;border-bottom:1px solid #e6dfd2;padding:4px 3px;vertical-align:top}#r14Hist .cur{font-weight:600}
 #r14State,#r14Progress{color:#5c6a70;margin:6px 0}#r14Progress:empty{display:none}
 #r14 .r14-t{width:100%;border-collapse:collapse;margin:10px 0 4px;font-size:12px}#r14 .r14-t th,#r14 .r14-t td{text-align:left;padding:4px 4px;border-bottom:1px solid #e6dfd2;vertical-align:top;font-variant-numeric:tabular-nums}#r14 .r14-t thead th{color:#5c6a70;font-weight:600}#r14 .r14-t tbody th{font-weight:400}#r14 .r14-over td{color:#8a3a2a;font-weight:600}
 #r14 .r14-verdict{background:#f3ece0;border-left:3px solid #ad653a;padding:7px 10px;border-radius:0 7px 7px 0;margin:10px 0 4px}#r14 .r14-bad{color:#8a3a2a}#r14 .r14-warn{color:#8a5a12}#r14 .r14-ok{color:#1f6b4f}#r14 .r14-stale{color:#8a3a2a}
@@ -51,9 +52,9 @@ panel='''<aside id="r14" aria-label="Úprava kloubů"><button id="r14Toggle" ari
 <p class="r14-hint">Natočení mění jen polohu pouzdra v modelu, do výpočtu sil nevstupuje.</p>
 <label class="r14-check"><input type="checkbox" id="r14Carry"><span>Posunout i všechno, co na kloubu visí. Bez zaškrtnutí se hýbe jen osa se servem a díly pod kloubem zůstávají na místě.</span></label>
 <div id="r14Facts"></div>
-<div class="r14-btns"><button class="primary" id="r14RunBtn">Přepočítat</button><button id="r14ResetJoint">Vrátit kloub</button><button id="r14ResetAll">Vrátit vše</button></div>
+<div class="r14-btns"><button class="primary" id="r14RunBtn">Přepočítat</button><button id="r14ResetJoint">Vrátit kloub</button><button id="r14ResetAll">Vrátit vše</button><button id="r14Undo" title="Zpět (Ctrl+Z)" aria-label="Zpět">↶</button><button id="r14Redo" title="Znovu (Ctrl+Y)" aria-label="Znovu">↷</button></div>
 <p id="r14Progress" role="status"></p><div id="r14Results"></div>
-<h3 style="margin-top:14px">Plná kontrola v GitHubu</h3><p class="r14-hint">Pohyb jen přizpůsobí (neladí ho znovu), ale přepočítá přelez přesně: statika při třech třeních, přesné mezery ze sítí a dynamická simulace v šesti variantách. Trvá asi 10 minut, nic nenasazuje.</p>
+<details id="r14HistBox" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Historie revizí</summary><div id="r14Hist"></div></details><h3 style="margin-top:14px">Plná kontrola v GitHubu</h3><p class="r14-hint">Pohyb jen přizpůsobí (neladí ho znovu), ale přepočítá přelez přesně: statika při třech třeních, přesné mezery ze sítí a dynamická simulace v šesti variantách. Trvá asi 10 minut, nic nenasazuje.</p>
 <label class="r14-check"><input type="checkbox" id="r14Fast"><span>Rychlá kontrola (asi 3 minuty, méně přesná)</span></label>
 <div class="r14-btns"><button class="primary" id="r14SendBtn">Odeslat k přepočtu</button></div><div id="r14Remote"></div>
 <h3 style="margin-top:14px">Vydání</h3><p class="r14-hint">Nová revize z prošlé úpravy (tlačítko u přepočtu výše) a nasazení na server – vše běží v GitHubu.</p><div id="r14Release"></div>
@@ -63,6 +64,10 @@ panel='''<aside id="r14" aria-label="Úprava kloubů"><button id="r14Toggle" ari
 kotva='<section id="r15" aria-labelledby="r15Title">' if '<section id="r15" aria-labelledby="r15Title">' in s else '<section id="r13" aria-labelledby="r13Title">'
 rep(kotva,css+panel+kotva)   # panel mimo sbalitelné oddíly (od R15 je zpráva R13 v <details>)
 i=s.find('<p class="r13-lead">'); j=s.find('</p>',i)+4
-s=s[:j]+'<p class="r13-note"><b>Nově:</b> tlačítkem <b>Úprava kloubů</b> vpravo dole posuneš libovolné servo přímo v modelu, uvidíš překreslenou vidlici a necháš přepočítat přelez i chůzi.</p>'+s[j:]
+s=s[:j]+'<p class="r13-note"><b>Nově v 0.5:</b> volba výšky schodu v modelu (u přelezu vpravo), historie revizí s přehráním R13, v panelu <b>Úprava kloubů</b> krok zpět/vpřed, uložení rozpracované úpravy, srovnání s předchozím přepočtem, dokreslené úchyty i v exportu 3MF a oznámení, když přepočet, nová revize nebo nasazení doběhne.</p>'+s[j:]
 k=s.find('<script type="application/json" id="r13Data">'); s=s[:k]+'<script type="application/json" id="r14Data">'+data+'</script>'+s[k:]
+sys.path.insert(0,HERE); import audit_upravy
+s=audit_upravy.uprav(s,lambda a,b:(rep(a,b),globals()['s'])[1])
 open(out,'w',encoding='utf8').write(s); print('ok',len(s))
+if audit_upravy.KONDO:
+    kf=os.path.join(os.path.dirname(os.path.abspath(out)),'kondo-data.json'); open(kf,'w',encoding='utf8').write(audit_upravy.KONDO); print('kondo',len(audit_upravy.KONDO),kf)

@@ -38,6 +38,8 @@ Na projektu pracuje střídavě Claude i GPT. Platí společná pravidla `ai-pro
 pak `python3 -I zdroj/uprava-kloubu/build_r14.py /tmp/r15.html web/app/emil-h22.html`. Vstupní R13 je na e2 v `ai-projekty/Humanoid/revize/H22/R13/`.
 Po změně výchozího pohybu: `python3 -I kontrola/prepocet.py <{}> <výstup> --vychozi`, `pohyb.json` z výstupu do `zdroj/r15/pohyb-R15.json`,
 `python3 -I zdroj/r15/dynamika.py zdroj/r15/pohyb-R15.json zdroj/r15/dynamika-R15.json`, pak obě sestavení. Verze aplikace je v `stranka_r15.py` (`VERZE_APLIKACE`).
+`build_r14.py` nanáší i opravy z auditu (`zdroj/uprava-kloubu/audit_upravy.py`: načítání, mobil, přiblížení dvěma prsty, výška schodu, karta Mezery,
+export 3MF s úchyty) a vyjme data Konda do `web/app/kondo-data.json` (servíruje `index.php?data=kondo` po přihlášení; patří do nasazení).
 
 ## Nová revize z úpravy kloubů
 

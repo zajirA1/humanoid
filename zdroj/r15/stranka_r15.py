@@ -9,7 +9,7 @@ import sys, os, re, json, subprocess, tempfile, html as H
 TU = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.normpath(os.path.join(TU, '..', '..'))
 KD = os.path.join(ROOT, 'kontrola'); UK = os.path.join(ROOT, 'zdroj', 'uprava-kloubu')
 DATA = os.path.join(TU, 'data')   # zmrazená data R15 (model, srovnávací hodnoty)
-VERZE_APLIKACE = '0.4'
+VERZE_APLIKACE = '0.5'
 src, out = sys.argv[1], sys.argv[2]
 
 def cz(x, d=1): return f'{x:.{d}f}'.replace('.', ',')
@@ -90,6 +90,12 @@ s = set_block(s, 'r12ClearanceData', Cl)
 P14 = json.load(open(os.path.join(UK, 'r14page.json')))
 assert P14['contacts'] == M['contacts'] and P14['ex'] == M['ex']
 P14['ref'] = ratios; P14['selfBase'] = [round(v, 3) for v in V['self']]; P14['envBase'] = [round(v, 3) for v in V['env']]; P14['revize'] = 'R15'
+P14['historie'] = [
+    dict(rev='R13', datum='2026-11-21', popis='Přelez schodu 21 cm s oporou dlaní a bérců (podle Konda).', max=round(max(x['s'] for x in ST13), 4), self=9.97, env=3.26, dyn='202–215 mm',
+         zaklad={}, q=[[round(float(v), 4) for v in p['q']] for p in C13['poses']], rt=[[round(float(v), 5) for v in p['rt']] for p in C13['poses']]),
+    dict(rev='R15', datum='2026-11-22', popis='Posun trupu ve fázi 3 (zatížená pravá dlaň), levá noha dál od hrany, přizpůsobení výšce schodu od 30 s.',
+         max=round(ratios[k], 4), self=round(V['self'][smin], 2), env=round(V['env'][emin], 2), dyn='202–218 mm', zaklad={}, aktualni=True)]
+P14['hz'] = HZ; P14['vyska_od_s'] = M.get('vyska_od_s', 30.0); P14['vyska_nabeh_s'] = M.get('vyska_nabeh_s', 2.0)
 json.dump(P14, open(os.path.join(UK, 'r14page.json'), 'w'), separators=(',', ':'))
 
 # ---------- texty ----------
@@ -134,6 +140,17 @@ svg = (f'<svg id="r15Chart" viewBox="0 0 {W} {Hh}" role="img" aria-label="Využi
        f'<text x="{X(k) - 8:.1f}" y="{Y(r15s[k]) - 8:.1f}" text-anchor="end" font-size="12" fill="#193733">R15 · {pct(r15s[k])}</text>'
        f'<line id="r15Cross" x1="0" x2="0" y1="{mt}" y2="{Hh - mb}" stroke="#193733" stroke-width="1" visibility="hidden"/>'
        f'<rect id="r15Hit" x="{ml}" y="{mt}" width="{W - ml - mr}" height="{Hh - mt - mb}" fill="transparent"/></svg>')
+a3, b3 = int(13 * HZ), int(34 * HZ)
+X3 = lambda i: ml + (W - ml - mr) * (i - a3) / (b3 - a3); top3 = max(max(r13s[a3:b3]), max(r15s[a3:b3])) * 1.15
+Y3 = lambda v: mt + (Hh - mt - mb) * (1 - v / top3)
+g3 = []
+for v in [x / 10 for x in range(0, 11) if x / 10 <= top3]:
+    g3.append(f'<line x1="{ml}" x2="{W - mr}" y1="{Y3(v):.1f}" y2="{Y3(v):.1f}" stroke="#dbe4dc"/><text x="{ml - 6}" y="{Y3(v) + 4:.1f}" text-anchor="end" font-size="11" fill="#5d6f67">{int(v * 100)} %</text>')
+for t in range(13, 35, 3): g3.append(f'<text x="{X3(t * HZ):.1f}" y="{Hh - mb + 18}" text-anchor="middle" font-size="11" fill="#5d6f67">{t} s</text>')
+p3 = lambda arr: 'M' + ' L'.join(f'{X3(i):.1f} {Y3(arr[i]):.1f}' for i in range(a3, b3))
+svg3 = (f'<div class="r13-chartwrap"><div class="r13-legend"><span><i style="background:#c2571a"></i>R13</span><span><i style="background:#2a78d6"></i>R15</span><span style="color:#5d6f67">Fáze 3 zblízka (13–34 s): kde se R15 od R13 liší.</span></div>'
+        f'<svg id="r15Chart3" viewBox="0 0 {W} {Hh}" role="img" aria-label="Využití serva ve fázi 3, R13 a R15" style="width:100%;height:auto;display:block">' + ''.join(g3) +
+        f'<path d="{p3(r13s)}" fill="none" stroke="#c2571a" stroke-width="2"/><path d="{p3(r15s)}" fill="none" stroke="#2a78d6" stroke-width="2"/></svg></div>')
 D15 = dict(n=[round(v, 4) for v in r15s], b=[round(v, 4) for v in r13s], jn=[JN[x['j']] for x in ST], jb=[JN[x['j']] for x in ST13],
            ph=[p['phase'] for p in C['poses']], names=names, hz=HZ, geo=dict(ml=ml, mr=mr, W=W, tmax=T), peak=k, f3=int(14.4 * HZ) + 1)
 diff = [i for i in range(n) if abs(r15s[i] - r13s[i]) > 0.005]
@@ -152,9 +169,11 @@ a robot po změření výšky schodu (dotykem dlaně) od 30. sekundy přizpůsob
 <div class="r13-kpi"><span>Výška schodu, kterou zvládne</span><b>202–218 mm</b><small>R13: 202–215 mm · výška změřená přesně</small></div>
 <div class="r13-kpi"><span>Odstup dílů od schodu</span><b>{cz(V["env"][emin], 1)} mm</b><small>R13: 3,3 mm · mezera mezi díly {cz(V["self"][smin], 1)} mm</small></div>
 <div class="r13-kpi"><span>Slabá místa rovnováhy</span><b>208 poloh</b><small>R13: 239 · nejslabší opora 0,5 N (R13: 0,0 N)</small></div></div>
-<div class="r13-chartwrap"><div class="r13-legend"><span><i style="background:#c2571a"></i>R13</span><span><i style="background:#2a78d6"></i>R15</span><span style="color:#5d6f67">Využití nejzatíženějšího serva, 100 % = pracovní moment, tření 0,50. Čísla nahoře jsou fáze. Liší se jen fáze 3 ({len(diff)} poloh).</span></div>{svg}<div id="r15Tip"></div></div>
 <div class="r13-actions"><button type="button" class="mainbtn" id="r15Play">Přehrát přelez R15 v modelu</button><button type="button" id="r15F3">Skočit na fázi 3 (změna oproti R13)</button><button type="button" id="r15Peak">Skočit na nejtěžší polohu</button></div>
-<div class="r13-note">Model ukazuje R15 na schodu 210 mm. Přizpůsobení jiné výšce počítá jen automatická kontrola (tlačítko Úprava kloubů → Odeslat k přepočtu). Výsledky jsou ze simulace bez zpětné vazby; skutečný robot musí výšku schodu změřit asi na ±2 mm.</div>
+<details class="rev-more"><summary>Celá zpráva R15 – graf zatížení, výška schodu, změny, kontroly a historie</summary>
+<div class="r13-chartwrap"><div class="r13-legend"><span><i style="background:#c2571a"></i>R13</span><span><i style="background:#2a78d6"></i>R15</span><span style="color:#5d6f67">Využití nejzatíženějšího serva, 100 % = pracovní moment, tření 0,50. Čísla nahoře jsou fáze. Liší se jen fáze 3 ({len(diff)} poloh).</span></div>{svg}<div id="r15Tip"></div></div>
+{svg3}
+<div class="r13-note">Výšku schodu v modelu změníš vpravo u přelezu (Výška schodu v modelu): poloha a statika se přepočítají v prohlížeči. Zda robot nespadne, počítá jen dynamika v automatické kontrole. Výsledky jsou ze simulace bez zpětné vazby; skutečný robot musí výšku schodu změřit asi na ±2 mm.</div>
 <details open><summary>Co se oproti R13 změnilo</summary><ul>
 <li><b>Fáze 3 (14–30 s):</b> trup posunutý asi o 12 mm ke schodu a 12 mm doprava. Pravá dlaň, bez které by robot nestál, nese místo 0 N aspoň 0,5 N; v R13 se na vyšším schodu odlepila a robot se převrátil.</li>
 <li><b>Levá noha ve fázi 3</b> zvedá koleno tak, aby minulo hranu schodu: odstup {cz(V["env"][emin], 2)} mm (bez úpravy by posun trupu přitáhl koleno ke hraně na 0,3 mm).</li>
@@ -190,7 +209,7 @@ JS = r"""(function(){const D=JSON.parse($('r15Data').textContent),svg=$('r15Char
 })();"""
 i0 = s.index('<section id="r13" aria-labelledby="r13Title">'); i1 = s.index('</section>', i0) + len('</section>')
 css = '<style>#r15{border:1px solid #9cb7d6;border-radius:13px;background:#fffdf6;padding:clamp(14px,2vw,26px);margin:0 0 22px}#r15 h2{font:normal clamp(24px,3vw,36px)/1.12 Georgia,serif;letter-spacing:-.02em;margin:2px 0 8px}#r15 p{max-width:95ch;margin:6px 0}#r15 .r13-lead{font-size:16px}#r15 .r13-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:14px 0}#r15 .r13-chartwrap{position:relative;border:1px solid #cfdbd1;border-radius:9px;background:#fcfcfb;padding:8px 8px 2px;margin:8px 0}#r15Chart{width:100%;height:auto;display:block}#r15 .r13-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#274f46;padding:2px 6px 6px}#r15 .r13-legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}#r15Tip{position:absolute;pointer-events:none;background:#193733;color:#fff;font-size:12.5px;line-height:1.35;padding:6px 9px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-110%);visibility:hidden;z-index:2}#r15 table{border-collapse:collapse;width:100%;font-size:13.5px;margin:6px 0}#r15 th,#r15 td{border-bottom:1px solid #dbe4dc;padding:5px 8px;text-align:left;vertical-align:top}#r15 thead th{font-weight:600;color:#3d5a50;border-bottom:1px solid #9fb5a9}#r15 details{border-top:1px solid #cfdbd1;padding:9px 0}#r15 summary{cursor:pointer;font-weight:600;font-size:15px}#r15 .r13-scroll{overflow-x:auto}#r15 .r13-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px}#r15 .r13-note{background:#f3ece0;border-left:3px solid #ad653a;padding:8px 12px;border-radius:0 7px 7px 0;margin:10px 0}#r15 ul{margin:6px 0;padding-left:20px;max-width:95ch}#r15 li{margin:3px 0}#r15 .r15-hist>section#r13{margin-top:10px}</style>'
-s = s[:i0] + css + sec + s[i0:i1] + '</details></section>' + '<script type="application/json" id="r15Data">' + json.dumps(D15, separators=(',', ':'), ensure_ascii=False) + '</script>' + s[i1:]
+s = s[:i0] + css + sec + s[i0:i1] + '</details></details></section>' + '<script type="application/json" id="r15Data">' + json.dumps(D15, separators=(',', ':'), ensure_ascii=False) + '</script>' + s[i1:]
 s = rep(s, "choose('climb');(function(){const D=JSON.parse($('r13Data')", "choose('climb');" + JS + "(function(){const D=JSON.parse($('r13Data')")
 open(out, 'w', encoding='utf-8').write(s)
 print('R15 stránka', len(s), 'znaků · max', pct(ratios[k]), 'v', k, loads[k]['joint'], '· odstup', round(V['env'][emin], 2), 'mm · mezera', round(V['self'][smin], 2), 'mm')
