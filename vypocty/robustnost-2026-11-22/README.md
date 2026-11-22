@@ -30,3 +30,19 @@ Rozbor pádu ve 50 s na 218 mm: koleno leží o 8 mm výš, robot je naklopen o 
 klesne na 0 N. Závěr: předem spočítaný pohyb bez zpětné vazby má ve fázích na třech oporách tak malou rezervu, že posunem trupu ani
 přizpůsobením výšce se robustnost nad ±5 mm zvýšit nedá. Další krok: jednoduché vyvažování v simulaci (IMU náklon + síly v dlaních →
 korekce trupu), které bude mít i skutečný robot; teprve s ním znovu posun trupu a přizpůsobení výšce. Výchozí pohyb zůstává R13.
+
+## Třetí kolo (16:30–18:45) – vyvažování v simulaci (NEFUNKČNÍ)
+
+Kód: `kontrola/vyvazovani.py` (třídy `Vyvazovani` a `ReflexDlani`), zapojení `prepocet.simuluj(..., vyvazovani=dict(trida=…, cile=…, nez=…, zesileni=…))`,
+testy `vv.py` (výšky schodu, zesílení jako JSON), `znam.py` (zkouška směru oprav těžiště), `dbg.py`. Automatická kontrola vyvažování nepoužívá.
+
+Postup a nálezy:
+1. Silová složka (posun těžiště k odlehčené opoře) bez sledování plánu → rozkmit, pád v 15–19 s.
+2. Chyba nalezena: opravy se počítaly od už opraveného stavu (dvojí započtení) → přepsáno na integrační sledování plánovaného těžiště a náklonu.
+3. Chyba nalezena: rozřešení „platilo“ posun těžiště volným pohybem trupu a měkce posouvalo opory; chodidla držena jen v bodě → robot se
+   mohl zdarma překlopit kolem spojnice chodidel. Opraveno (opory pevně, chodidla i natočením, holeně dvěma body, cena jen na kloubech);
+   kontrola `znam.py`: cíl 5 mm → skutečně 5,8 / 4,8 mm.
+4. I tak: sledování těžiště samo padá ve 50 s už na 210 mm (drží robota v nejslabší poloze plánu); se silovou složkou pád ve 23–69 s
+   podle zesílení; reflex dlaní (natažení ruky k podložce) pád v 19 s na 210 mm.
+Závěr: jednoduché regulátory nad pozičními servy s plánem R13 robustnost nezvýšily. Další možnosti: regulace síly v oporách přes QP
+(rozdělení sil + momenty kloubů), nebo nový plán přelezu s vyrovnaným zatížením opor ve fázích na třech oporách (nejlépe obojí).

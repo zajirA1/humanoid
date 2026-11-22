@@ -109,7 +109,7 @@ def mj_xml(P,E,links,mu=0.5,step_h=STEP,mass_scale=1.0,lim_scale=1.0,kp_scale=1.
 <default class="env"><geom contype="1" conaffinity="2"/></default><default class="foot"><geom contype="2" conaffinity="1"/></default><default class="pad"><geom contype="2" conaffinity="1"/></default></default>
 <worldbody><geom name="floor" type="plane" size="2 2 .1" class="env"/><geom name="step" type="box" pos="0 -0.14 {step_h*MM/2:.5f}" size="0.33 0.14 {step_h*MM/2:.5f}" class="env"/>
 <body name="b22" pos="0 0 0"><freejoint name="root"/>{inertial(22)}{''.join(body(c) for c in children[22])}</body></worldbody><actuator>{act}</actuator></mujoco>'''
-def simuluj(frames,P,E,links,G,ff,mu=0.5,step_h=STEP,mass_scale=1.0,lim_scale=1.0,y_offset=0.0,settle=1.0,tail=3.0):
+def simuluj(frames,P,E,links,G,ff,mu=0.5,step_h=STEP,mass_scale=1.0,lim_scale=1.0,y_offset=0.0,settle=1.0,tail=3.0,vyvazovani=None):
     import mujoco
     MM=1e-3; m=mujoco.MjModel.from_xml_string(mj_xml(P,E,links,mu,step_h,mass_scale,lim_scale,G=G)); d=mujoco.MjData(m)
     Q=np.radians(np.array([f['q'] for f in frames])); n=len(frames); T=(n-1)/HZ
@@ -117,10 +117,16 @@ def simuluj(frames,P,E,links,G,ff,mu=0.5,step_h=STEP,mass_scale=1.0,lim_scale=1.
     R0,t0=rt2T(frames[0]['rt']); quat=np.zeros(4); mujoco.mju_mat2Quat(quat,np.ascontiguousarray(R0).reshape(-1))
     d.qpos[:3]=(t0+np.array([0,y_offset,0.3]))*MM; d.qpos[3:7]=quat; d.qpos[7:29]=np.radians(frames[0]['q']); d.ctrl[:]=Q[0]; mujoco.mj_forward(m,d)
     dt=m.opt.timestep; nst=int(round((settle+T+tail)/dt)); every=int(round(1/(6*dt))); lim=LIM*lim_scale
-    pk=np.zeros(22); tt=[];root=[];qs=[];taupk=[]; div=None; nsat=0; ntot=0
+    pk=np.zeros(22); tt=[];root=[];qs=[];taupk=[]; div=None; nsat=0; ntot=0; VV=None; oprava=np.zeros(22)
     usej=[j for j in range(22) if j not in (11,21)]
     for k in range(nst):
         t=k*dt-settle; u=min(max(t,0),T)*HZ; i=min(int(u),n-2); a=u-i; d.ctrl[:]=Q[i]*(1-a)+Q[i+1]*a
+        if vyvazovani is not None:
+            if VV is None:
+                import vyvazovani as _v; VV=getattr(_v,vyvazovani.get('trida','Vyvazovani'))(m,vyvazovani['cile'],vyvazovani.get('nez'),**vyvazovani.get('zesileni',{})); VV.ladit=vyvazovani.get('ladit',False); oprava=np.zeros(22)
+            if t>=0 and k%20==0:
+                fi=min(n-1,max(0,int(round(u)))); oprava=VV.krok(d,fi,rt2T(frames[fi]['rt'])[0],0.02,frames[fi].get('com'))
+            d.ctrl[:]+=oprava
         mujoco.mj_step(m,d); af=np.abs(d.actuator_force); pk=np.maximum(pk,af)
         if t>=0: ntot+=1; nsat+=bool((af[usej]>=lim[usej]*0.999).any())
         if (k+1)%every==0: tt.append(t); root.append(d.qpos[:7].copy()); qs.append(np.degrees(d.qpos[7:29])); taupk.append(pk.copy()); pk=np.zeros(22)
