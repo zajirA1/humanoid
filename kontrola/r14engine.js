@@ -76,10 +76,14 @@ function r14Engine(K){
  function rodrigues(o){const th=Math.hypot(o[0],o[1],o[2]);if(th<1e-12)return [1,0,0,0,1,0,0,0,1];const x=o[0]/th,y=o[1]/th,z=o[2]/th,s=Math.sin(th),c=Math.cos(th),v=1-c;return [c+x*x*v,y*x*v+z*s,z*x*v-y*s,x*y*v-z*s,c+y*y*v,z*y*v+x*s,x*z*v+y*s,y*z*v-x*s,c+z*z*v]}
  const VARJ=[2,3,4,5,6,7,8,9,10,12,13,14,15,16,17,18,19,20],VIDX={};VARJ.forEach((j,i)=>VIDX[j]=6+i);const NV=24,PELV=[0,1,324];
  // whole-body least squares: supports stay where they were, torso and free limbs give way
- function retarget(q0,root0,w0,flat,off){const q=q0.slice();let root=root0.slice();const on=new Set();for(let i=0;i<flat.length;i+=4)on.add(flat[i]);
+ function retarget(q0,root0,w0,flat,off,shift,liftdz){const q=q0.slice();let root=root0.slice();const on=new Set();for(let i=0;i<flat.length;i+=4)on.add(flat[i]);
   const tasks=[];
   for(const L of LIMBS){const shinMode=on.has(L.shin)&&!on.has(L.foot);
-   const add=(link,wt,c)=>{for(const p of refs(link,L.sx))tasks.push({link,p,t:pos(w0[link],p),wt,c})};
+   const add=(link,wt,c)=>{for(const p of refs(link,L.sx)){const t=pos(w0[link],p);
+     if(shift&&shift[link]){t[0]+=shift[link][0];t[1]+=shift[link][1];t[2]+=shift[link][2]||0}
+     // přizpůsobení výšce schodu: body nad schodem (y<-5 mm, z>100 mm) o liftdz výš, v pásu ±5 mm u hrany plynule
+     if(liftdz){const nad=t[1]<-5?1:t[1]>5?0:(5-t[1])/10;if(t[2]>100)t[2]+=liftdz*nad}
+     tasks.push({link,p,t,wt,c})}};
    if(shinMode){add(L.shin,1,true);add(L.foot,0.05,false)}else add(L.foot,on.has(L.foot)?1:0.15,on.has(L.foot));
    add(L.hand,on.has(L.hand)?1:0.15,on.has(L.hand))}
   const lt=3e-4,lr=30,lq=3,du=[0,0,0],dw=[0,0,0];let drift=0;

@@ -32,12 +32,14 @@ def min_koncetiny(G,mypairs,links,w,STEP,ex,cap,env_posun=0.0):
             if lo[2]>best and (lo[1]>best or lo[2]>STEP+best): continue
             best=min(best,_env(g['V']@R.T+t,STEP)+env_posun)
     return best
-def dolad(F,M,P_,E_,G,pairs,fk,selfd,cil,STEP,log=print,cil_env=3.5):
+def dolad(F,M,P_,E_,G,pairs,fk,selfd,cil,STEP,log=print,cil_env=3.5,envd=None):
     n=len(F); ex_of=lambda i:{k for k,b in (((7,'body'),1),((17,'body'),2),((5,'sleeve'),4),((15,'sleeve'),8)) if M['ex'][i]&b}
     zasah=[]
     for k,K in KONCETINY.items():
         links=K['links']; J=K['j']
-        spatne=sorted(i for d,i,bp in selfd if d<cil and bp and volna(k,M['support'][i]) and (bp[0][0] in links or bp[1][0] in links))
+        spatne=set(i for d,i,bp in selfd if d<cil and bp and volna(k,M['support'][i]) and (bp[0][0] in links or bp[1][0] in links))
+        if envd: spatne|=set(i for e,i,ek in envd if e<cil_env and ek and ek[0] in links and volna(k,M['support'][i]))
+        spatne=sorted(spatne)
         if not spatne: continue
         mypairs=[(a,b) for a,b in pairs if a[0] in links or b[0] in links]
         # úseky: sousední špatné polohy (mezera ≤ 6) spojit

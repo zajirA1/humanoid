@@ -46,3 +46,32 @@ Postup a nálezy:
    podle zesílení; reflex dlaní (natažení ruky k podložce) pád v 19 s na 210 mm.
 Závěr: jednoduché regulátory nad pozičními servy s plánem R13 robustnost nezvýšily. Další možnosti: regulace síly v oporách přes QP
 (rozdělení sil + momenty kloubů), nebo nový plán přelezu s vyrovnaným zatížením opor ve fázích na třech oporách (nejlépe obojí).
+
+## Čtvrté kolo (19:00–22:30) – nový plán s vyrovnanými oporami + přizpůsobení výšce → revize R15
+
+Skripty (cesty počítají s pracovní složkou `/tmp/plan`, kopie R13 = `model_R13.json` z commitu 8529369):
+`posun2.js` (dávkové přizpůsobení s posunem trupu `off`, posunem cíle dlaně/chodidla `shift`, zdvihem nad schodem `lift`),
+`planB.py` (statické hledání položení dlaní), `dynopt.py` (hledání s MuJoCo ve smyčce), `schody.py`, `vyska.js`, `eng_lift.js`
+(přizpůsobení výšce), `genR15.py` (sestavení R15 z R13 + `off.json`), `noha.py` (volná levá noha ve fázi 3), `envscan.py` (odstupy).
+
+Postup a nálezy:
+1. Statické vylepšení rezerv (planB: slabých poloh 239 → 218) v dynamice padalo (50,8 s na 210 mm) → hledání přímo s dynamikou.
+2. Mřížka 25 položení pravé dlaně s posunem trupu ×0,5: pád ve 50 s na 218 mm nespravila žádná. Pevný plán fázi s kolenem
+   na schodu při jiné výšce schodu nezvládne.
+3. **Přizpůsobení výšce**: robot výšku schodu změří dotykem dlaně (je na schodu od začátku fáze 3) a od 30 s plynule (2 s) zvedne
+   cíle nad schodem o rozdíl `dh` a pánev o `dh` × podíl opor na schodu (`retarget(..., liftdz)`, `prizpusob.js` `vyska_dh`).
+   Plná dynamika, posun trupu ve fázi 3 ×0,5:
+
+   | Skutečný schod | Plánované dh | Výsledek |
+   |---|---|---|
+   | 202 / 205 / 210 / 215 / 218 mm | přesně | doběhne |
+   | 225 mm | +15 | pád 21,7 s (ještě před přizpůsobením) |
+   | 218 mm | +6 / +10 (chyba měření ∓2 mm) | pád |
+   | 210 mm | ±2, ±3 | doběhne |
+   | 202 mm | −6 / −10 | doběhne / neprošlo (chyba konce 28 mm) |
+
+   Výška se tedy musí změřit zhruba na ±1–2 mm; větší chyba toleranci zužuje.
+4. Integrace jako R15 (`kontrola/data/model.json`): posun trupu přitáhl volnou levou nohu k hraně schodu (odstup 0,34 mm ve 23,5 s);
+   rozšířené doladění v kontrole dotáhlo jen na 2,37 mm (jedna společná změna úhlů pro celý dlouhý úsek nestačí).
+   Proto `noha.py`: po polohách (16–33 s) pootočení kloubů levé nohy tak, aby koleno a holeň minuly hranu o ≥ 6 mm, vyhlazení
+   v čase (σ 2 polohy), 2 průchody → odstup v celém pohybu 3,26 mm (stejně jako R13), mezery dílů 9,22 mm, změna nohy ≤ 10°.

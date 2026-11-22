@@ -16,7 +16,8 @@ for k,e in up.items():
     rt=e.get('natoceni_serva_deg',0)
     if not isinstance(rt,(int,float)) or abs(rt)>180: sys.exit(f'Kloub {k}: neplatné natočení')
     cist[str(int(k))]=dict(kloub=str(e.get('kloub',''))[:80],posun_mm=[float(v) for v in d],nese_dalsi_dily=bool(e.get('nese_dalsi_dily',False)),natoceni_serva_deg=float(rt))
-out=dict(model='Emil H22 R13',upravy=cist)
+rev=json.load(open('kontrola/data/model.json')).get('revize','R13')
+out=dict(model='Emil H22 '+rev,upravy=cist)
 json.dump(out,open(sys.argv[1],'w'),ensure_ascii=False,indent=1)
 i=os.environ.get('VSTUP_ID','').strip()
 if not re.fullmatch(r'[A-Za-z0-9-]{4,40}',i): i=datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d-%H%M%S')+'-'+hashlib.sha256(json.dumps(cist,sort_keys=True).encode()).hexdigest()[:6]
