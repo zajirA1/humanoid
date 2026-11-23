@@ -58,6 +58,16 @@ function r14Fix(p){if(!r14Ready||!r14Active||!r14Any()||!p||!p.q||!p.rt)return p
 function r14Before(){if(!r14Ready)return;r14Sync();if(!r14Active)return;
  if(mode==='climb')r14Climb(idx);else if(mode==='walk'){r14Walk(walkData.poses[idx]);r14Walk(walkData.poses[idx+1])}else if(!r10IsMotion()){const o=info();if(o&&o.poses)r14Legacy(o.poses[idx])}}
 function r14After(project,w){if(!r14Ready)return;r14Proj=project;r14W=w;const hb=$('r14HeightBox');if(hb){const v=mode==='climb'&&r9IsActive()&&!document.body.classList.contains('kondo-active');if(hb.hidden===v)hb.hidden=!v}r14Overlay()}
+// směr posunu do strany srozumitelně: ven od trupu / dovnitř k trupu (osa X modelu: + k levému boku robota)
+function r14DirHint(){const el=$('r14Dir');if(!el)return;const j=r14Sel,p=r14P0[j],px=p?p[0]:0;if(!(Math.abs(px)>5)){el.textContent='';return}
+ const txt=v=>Math.abs(v)<.05?'beze změny':fmt(Math.abs(v),1)+' mm '+(v*px>0?'ven od trupu':'dovnitř k trupu');
+ const u=(r14Edits[j]&&r14Edits[j].d)?+r14Edits[j].d[0]:0,z=(r14Zaklad[j]&&r14Zaklad[j].d)?+r14Zaklad[j].d[0]:0;
+ el.textContent='Do strany ('+(px>0?'levá':'pravá')+' strana robota): '+txt(u)+(Math.abs(z)>.05?' · s posunem zapečeným v revizi '+r14Rev+' celkem '+txt(u+z)+' oproti původní konstrukci':'')+'.'}
+// export 3MF: díly v neutrální poloze s posunem serva (d), visícími díly (E) a natočením pouzdra – stejně jako v modelu
+window.r14CadPrep=()=>{if(!r14Ready||!r14Active)return null;const ef=r14Eff(r14Edits),W=r14Eng.fk(Array(22).fill(0),[1,0,0,0,1,0,0,0,1,0,0,0]);
+ return (k,tm,ow,link)=>{let t=tm.slice();const o=r9RenderItems[k],e=Number.isInteger(ow)&&ow<22&&!(o&&o.frame)?ef[ow]:null;
+  if(e){if(e.rot&&link===par[ow])t=mat(rot(axes[ow],e.rot,r14P0[ow]),t);const sh=link===ow?sub(e.d,e.E):e.d;for(let a=0;a<3;a++)t[9+a]+=sh[a]}
+  const F=W[link];return F?mat(F,t):t}};
 // ---------- dokreslené úchyty: bočnice a příčka vidlice k posunutému servu (zjednodušené, ne díl k tisku) ----------
 const r14ForkColor=hex('#c97b3d');
 function r14Cmd(cmd,w){if(!r14Ready||!r14Active||document.body.classList.contains('kondo-active'))return;const EF=r14Eff(r14Edits);
@@ -112,7 +122,7 @@ function r14Set(j,patch){const cur=r14Edits[j]||{d:[0,0,0],carry:false,rot:0},e=
  const m=r14Mirror(j);if($('r14Mirror').checked&&m!==j)put(m,{d:[-e.d[0],e.d[1],e.d[2]],carry:e.carry,rot:-e.rot});
  r14Ver++;r14Result=null;stop();r14Controls();r14Save();render()}
 function r14Controls(){r14Sync();const j=r14Sel,e=r14Edits[j]||{d:[0,0,0],carry:false,rot:0};
- for(let a=0;a<3;a++){$('r14R'+a).value=e.d[a];$('r14N'+a).value=e.d[a]}$('r14Rot').value=e.rot;$('r14RotOut').textContent=fmt(e.rot,0)+'°';$('r14Carry').checked=!!e.carry;
+ for(let a=0;a<3;a++){$('r14R'+a).value=e.d[a];$('r14N'+a).value=e.d[a]}$('r14Rot').value=e.rot;$('r14RotOut').textContent=fmt(e.rot,0)+'°';$('r14Carry').checked=!!e.carry;r14DirHint();
  const f=r14D.forks[j],pn=r14Eng.P[j],lines=[],seg=(a,b)=>norm(sub(a,b)),up=par[j];
  if(up<22){const o=seg(r14P0[j],r14P0[up]),n=seg(pn,r14Eng.P[up]);lines.push(['K ose nad kloubem ('+data.joints[up].split(' · ')[0]+')',fmt(o,1)+' → '+fmt(n,1)+' mm'])}
  const ch=par.map((p,k)=>p===j?k:-1).filter(k=>k>=0);

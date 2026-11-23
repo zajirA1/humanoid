@@ -49,13 +49,13 @@ Workflow *Nová revize* (`.github/workflows/nova-revize.yml`, vstup = označení
 `zdroj/revize/nova_revize.py`: posuny serv zapeče do `kontrola/data/model.json` (`zaklad`: d = posun osy a serva, E = posun visících dílů),
 převezme přizpůsobený pohyb (`pohyb.json` z přepočtu), spustí plnou kontrolu s `--vychozi`, přestaví `web/app/emil-h22.html`
 (posunutá serva, dokreslené zjednodušené úchyty, oddíl revize nahoře, verze aplikace +0,1) a commitne do `main`. Podklady revize jsou
-v `zdroj/revize/R<N>/`. Nic nenasazuje; kopii stránky na e2 `revize/H22/R<N>/` a předání dělá Claude/GPT. Smí ho spustit Claude/GPT
+v `zdroj/revize/R<N>/` (vč. `rozpis.json`; do stránky ho vkládá `zdroj/revize/rozpis_stranka.py`). Po commitu spustí workflow Kontrola. Nic nenasazuje; kopii stránky na e2 `revize/H22/R<N>/` a předání dělá Claude/GPT. Smí ho spustit Claude/GPT
 na pokyn majitele. Úpravy v panelu se k zapečeným posunům přičítají (`r14engine.mergeEdits`, `prizpusob.js`). Stránka R15 se staví
 ze zmrazených dat `zdroj/r15/data/`; další revize se nanášejí na hotovou stránku.
 
 ## Přepočet úpravy
 
-Workflow *Přepočet úpravy* smí Claude/GPT spustit kdykoli (nic nenasazuje). Meze verdiktu jsou v `kontrola/prepocet.py`
+Workflow *Přepočet úpravy* smí Claude/GPT spustit kdykoli (nic nenasazuje). Kontrola navíc dělá rozpis mezer po dílech a hlásí jako **varování** dotyky posunutého serva s vlastním rámem a sousedními články proti předchozí revizi (`kontrola/rozpis.py`, po jednotlivých dílech; meze verdiktu nemění). Meze verdiktu jsou v `kontrola/prepocet.py`
 (`MEZE`, povinné varianty dynamiky `POVINNE` = nominál a schod 205/215 mm, `ROBUST`); měnit je jen na pokyn majitele.
 Po změně výchozího pohybu (`kontrola/data/model.json`) přepočítat `vychozi*.json` (srovnávací hodnoty: `python3 -I kontrola/prepocet.py <prázdná úprava> <výstup> --vychozi`). `kontrola/r14engine.js` musí být shodný se `zdroj/uprava-kloubu/r14engine.js`.
 Po změně `zdroj/uprava-kloubu/*` znovu sestavit `web/app/emil-h22.html`.

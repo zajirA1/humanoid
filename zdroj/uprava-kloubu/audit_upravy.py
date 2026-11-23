@@ -70,6 +70,9 @@ def uprav(s, rep):
             "a.download=r8IsPaired()?(r9IsActive()?'Emil-H22-'+(window.r14Rev||'R12')+(window.r14CadItems&&window.r14CadItems().length?'-s-uchyty':''):'Emil-H22-R8-dvojite-kycle')")
     s = rep("if(typeof r11ExtraCadItems==='function'){",
             "if(r9IsActive()&&window.r14CadItems){const U=window.r14CadItems();if(U.length){meshes.r14_uchyt=window.r14CadBox;for(const item of U)nodes.push('<component objectid=\"'+mesh('r14_uchyt')+'\" transform=\"'+item.t.map(v=>+v.toFixed(5)).join(' ')+'\"/>')}}if(typeof r11ExtraCadItems==='function'){")
+    # export 3MF: posunutá serva i visící díly (E) jako v modelu, ne původní polohy R12
+    s = rep('for(let [n,tm,ow,link,flip] of cadItems)nodes.push(\'<component objectid="\'+mesh(n,flip)+\'" transform="\'+tm.join(\' \')+\'"/>\');',
+            'const r14T=r9IsActive()&&window.r14CadPrep?window.r14CadPrep():null;cadItems.forEach(([n,tm,ow,link,flip],k)=>{const t=r14T?r14T(k,tm,ow,link).map(v=>+(+v).toFixed(6)):tm;nodes.push(\'<component objectid="\'+mesh(n,flip)+\'" transform="\'+t.join(\' \')+\'"/>\')});')
     # prohlížeč Kondo: data až při otevření (index.php?data=kondo); stažené HTML je dostane vložená
     i = s.index('<script id="kModelData" type="application/json">') + len('<script id="kModelData" type="application/json">'); j = s.index('</script>', i)
     global KONDO

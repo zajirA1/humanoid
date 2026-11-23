@@ -2,6 +2,7 @@ name: Kontrola
 on:
   push:
   pull_request:
+  workflow_dispatch:   # spouští i workflow Nová revize po svém commitu (commit přes GITHUB_TOKEN push událost nevyvolá)
 permissions:
   contents: read
 jobs:

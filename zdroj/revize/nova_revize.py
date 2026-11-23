@@ -11,7 +11,8 @@ Postup (nic nenasazuje):
  4. jmenovitá dynamika po polohách, statika ze stejného jádra jako stránka,
  5. stránka web/app/emil-h22.html: nový pohyb a zatížení, zapečené posuny (servo posunuté, úchyty dokreslené),
     nový oddíl revize nahoře (předchozí oddíl sbalený jako historie), texty a verze aplikace +0.1,
- 6. podklady revize do zdroj/revize/R<N>/ (úprava, protokoly, pohyb, dynamika, info.json).
+ 6. podklady revize do zdroj/revize/R<N>/ (úprava, protokoly, pohyb, dynamika, rozpis mezer po dílech, info.json);
+    rozpis (kontrola/rozpis.py) hlásí i dotyky posunutých serv s vlastním rámem – jen varování, revize kvůli nim nespadne.
 Úchyty jsou zjednodušené desky (bočnice a příčka vidlice v rozměrech původní vidlice), ne díly k tisku."""
 import sys, os, re, json, shutil, subprocess, tempfile, datetime, html as H
 TU = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.normpath(os.path.join(TU, '..', '..'))
@@ -74,7 +75,7 @@ def main():
     kl = ', '.join(f"{M['JN'][int(j)]} {[round(float(x), 1) for x in e['posun_mm']]} mm" for j, e in U['upravy'].items())
     M2 = dict(M); M2['zaklad'] = zaklad; M2['q'] = P1['q']; M2['rt'] = P1['rt']; M2['revize'] = rev
     M2['revize_popis'] = f'{prev} + úprava kloubů z přepočtu {idp}: {kl}'
-    M2['historie'] = (M.get('historie') or []) + [dict(revize=rev, z=prev, prepocet=idp, upravy=U['upravy'], datum=datetime.date.today().isoformat())]
+    M2['historie'] = (M.get('historie') or []) + [dict(revize=rev, z=prev, prepocet=idp, upravy=U['upravy'], zaklad_z=M.get('zaklad', {}), datum=datetime.date.today().isoformat())]
     json.dump(M2, open(os.path.join(DATA, 'model.json'), 'w'), separators=(',', ':'))
     log('model', rev, 'zapečeno kloubů', len(zaklad))
     # ---- 3. plná kontrola nové revize + srovnávací hodnoty ----
@@ -92,6 +93,9 @@ def main():
     for f in ('uprava.json', 'vysledek.json', 'protokol.md'):
         if os.path.exists(os.path.join(src, f)): shutil.copy(os.path.join(src, f), os.path.join(out, 'prepocet-' + f))
     shutil.copy(os.path.join(d2, 'protokol.md'), os.path.join(out, 'kontrola-revize.md')); shutil.copy(os.path.join(d2, 'vysledek.json'), os.path.join(out, 'kontrola-revize.json'))
+    log('rozpis mezer po dílech a posunutá serva × vlastní rám')
+    subprocess.run([sys.executable, '-I', os.path.join(KD, 'rozpis.py'), os.path.join(out, 'rozpis.json'), '--krok', '2'], check=True)
+    RZ = json.load(open(os.path.join(out, 'rozpis.json')))
     log('dynamika po polohách')
     subprocess.run([sys.executable, '-I', os.path.join(ROOT, 'zdroj', 'r15', 'dynamika.py'), os.path.join(out, 'pohyb.json'), os.path.join(out, 'dynamika.json')], check=True)
     DYN = json.load(open(os.path.join(out, 'dynamika.json')))
@@ -211,9 +215,11 @@ def main():
         if depth == 0: pos = i0 + mm.end(); break
     s = s[:i0] + ('' if '.rev-sec{' in s else css) + sec + s[i0:pos] + '</details></details></section>' + f'<script type="application/json" id="{pid}Data">' + json.dumps(D, separators=(',', ':')) + '</script>' + s[pos:]
     s = sub1(s, r"choose\('climb'\);", "choose('climb');" + JS)
+    sys.path.insert(0, TU); import rozpis_stranka
+    s = rozpis_stranka.vloz(s, RZ, rev, prev)
     open(STRANKA, 'w', encoding='utf-8').write(s)
     info = dict(revize=rev, predchozi=prev, prepocet=idp, verze_aplikace=va, datum=datetime.datetime.now().isoformat(timespec='seconds'), upravy=U['upravy'], zaklad=zaklad,
-                souhrn=dict(max_vyuziti=ratios[k], mezera_dilu_mm=V['self'][smin], odstup_schod_mm=V['env'][emin], dynamika=dyn_new))
+                souhrn=dict(max_vyuziti=ratios[k], mezera_dilu_mm=V['self'][smin], odstup_schod_mm=V['env'][emin], dynamika=dyn_new), varovani_serva_ram=RZ.get('varovani', []))
     json.dump(info, open(os.path.join(out, 'info.json'), 'w'), ensure_ascii=False, indent=1)
     log(f'hotovo: {rev}, aplikace {va}, max {pct(ratios[k])}, mezera {cz(V["self"][smin], 2)} mm, odstup {cz(V["env"][emin], 2)} mm, dynamika {sum(dyn_new.values())}/{len(dyn_new)}')
     print(f'REVIZE={rev}\nVERZE={va}')

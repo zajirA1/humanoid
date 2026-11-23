@@ -237,6 +237,9 @@ def main():
         for R,t,q,tt in simstates[::2 if not rychle else 6]:
             i=min(n-1,max(0,int(round(tt*HZ)))); w=fk(q,list(R.T.reshape(-1))+list(t),P,E); d,_,e,_=mezery(G,pairs,w,M['ex'][i]); sd.append(d); se.append(e)
         simclr=dict(mezera_dilu_mm=float(min(sd)),odstup_schod_mm=float(min(se)))
+    # rozpis mezer po dílech a posunutá serva × vlastní rám a sousední články (jen varování, meze se nemění)
+    import rozpis
+    rz=rozpis.rozpis(M,ed,M.get('zaklad') or {},krok=6 if rychle else 3,log=log,polohy=[(f['q'],f['rt']) for f in F])
     kontroly=[
       ('Rovnováha ve všech polohách (tření 0,5 / 0,4 / 0,3)',not bad and not bad4 and not bad3,f'bez rovnováhy {len(bad)} / {len(bad4)} / {len(bad3)} z {n}'),
       (f'Nejvyšší využití serva ≤ {MEZE["max_vyuziti"]*100:.0f} %',pk is not None and pk<=MEZE['max_vyuziti'],'—' if pk is None else f'{pk*100:.1f} % ({JN[F[pki]["j50"]]}, {pki/HZ:.1f} s)'),
@@ -249,9 +252,11 @@ def main():
     proslo=all(k[1] for k in kontroly)
     r13dyn=json.load(open(os.path.join(DATA,'vychozi-dynamika.json')))
     varovani=[f'Dynamická simulace ve variantě „{k}“ nedoběhla (robot se odchýlil o {v.get("odchylka_konec_mm",0):.0f} mm). ' + (f'Výchozí {REV} ji zvládá – úprava rezervu zhoršila.' if r13dyn.get(k) else f'Nezvládá ji ani výchozí {REV} – slabina přelezu, ne úpravy.') for k,v in dyn.items() if k not in POVINNE and not v.get('uspech',True)]
+    if rz['varovani']:
+        varovani.append(f"Posunuté servo se nově dotýká vlastního rámu nebo sousedního článku ({len(rz['varovani'])} dvojic dílů, např. "+'; '.join(v.split(' – ')[0] for v in rz['varovani'][:3])+"). Rám nebo úchyt je potřeba upravit – viz protokol, oddíl Posunutá serva.")
     if robust_souhrn['slabych']>robust_souhrn['slabych_R13']+12 or robust_souhrn['rezerva_min']<robust_souhrn['rezerva_min_R13']-2 or robust_souhrn['predzatizeni_min']<robust_souhrn['predzatizeni_min_R13']-1:
         varovani.append(f"Robustnost je horší než u výchozího {REV}: slabých poloh {robust_souhrn['slabych']} ({REV} {robust_souhrn['slabych_R13']}), nejmenší rezerva těžiště {robust_souhrn['rezerva_min']:.1f} mm ({REV} {robust_souhrn['rezerva_min_R13']:.1f}), nejmenší zatížení nezbytné opory {robust_souhrn['predzatizeni_min']:.1f} N ({REV} {robust_souhrn['predzatizeni_min_R13']:.1f}).")
-    R=dict(verze_kontroly=4,revize=REV,robustnost=robust_souhrn,proslo=proslo,varovani=varovani,rychla=rychle,meze=MEZE,upravy=U.get('upravy',{}),kontroly=[dict(nazev=a,ok=bool(b),hodnota=c) for a,b,c in kontroly],
+    R=dict(verze_kontroly=5,serva_ram=dict(varovani=rz['varovani'],sousedni=rz['sousedni'][:40]),dvojice_dilu=rz['dvojice'],revize=REV,robustnost=robust_souhrn,proslo=proslo,varovani=varovani,rychla=rychle,meze=MEZE,upravy=U.get('upravy',{}),kontroly=[dict(nazev=a,ok=bool(b),hodnota=c) for a,b,c in kontroly],
       statika=dict(max=pk,max_s=None if pki is None else pki/HZ,max_kloub=None if pki is None else JN[F[pki]['j50']],vychozi_max=max(x for x in ref['s50'] if x is not None),bez_rovnovahy=bad[:50],posun_trupu_mm=shift,posun_opory_mm=drift),
       mezery=dict(dily_mm=smin[0],dily_s=smin[1]/HZ,dily_par=[f'L{a[0]} {a[1]}' for a in (smin[2] or [])],pod_10mm=below10,schod_mm=emin[0],schod_s=emin[1]/HZ,schod_dil=None if not emin[2] else f'L{emin[2][0]} {emin[2][1]}',pod_5mm=below5,
         vychozi_dily_mm=min(x for x in ref['self'] if x is not None),vychozi_schod_mm=min(x for x in ref['env'] if x is not None)),
@@ -280,9 +285,13 @@ def main():
       f'| | {REV} | Po úpravě |','|---|---|---|',f'| Slabých poloh | {robust_souhrn["slabych_R13"]} | {robust_souhrn["slabych"]} |',
       f'| Nejmenší rezerva těžiště | {robust_souhrn["rezerva_min_R13"]:.1f} mm | {robust_souhrn["rezerva_min"]:.1f} mm |',f'| Nejmenší zatížení nezbytné opory | {robust_souhrn["predzatizeni_min_R13"]:.1f} N | {robust_souhrn["predzatizeni_min"]:.1f} N |','']
     md+=[f'- {u["od"]:.1f}–{u["do"]:.1f} s: rezerva {u["rezerva"]:.1f} mm, nejslabší nezbytná opora {u["opora"]} {u["predzatizeni"]:.1f} N' for u in robust_souhrn['useky'] if u['do']-u['od']>=1.0]
+    md+=['','## Nejbližší dvojice dílů (každá 3. poloha)','','| Dvojice | Minimum | Čas |','|---|---|---|']+[f"| {d['a']} × {d['b']} | {d['mm']:.2f} mm | {d['cas_s']:.1f} s |" for d in rz['dvojice'][:10]]
+    if rz['sousedni']:
+        md+=['','## Posunutá serva × vlastní rám a sousední články','',f'Srovnání s geometrií výchozí {REV} po jednotlivých dílech. Dotyk nebo přiblížení pod {rozpis.VAR_MM:.0f} mm, které předtím nebylo, je varování.','',
+             '| Díl | Proti | Kde | Teď | Předtím | Stav |','|---|---|---|---|---|---|']+[f"| {r['a']} | {r['b']} | {r['druh']} | {r['mm']:.2f} mm | {r['mm_pred']:.2f} mm | {'⚠️ ' if r['stav'] in ('nový dotyk','blíž pod 2 mm') else ''}{r['stav']} |" for r in rz['sousedni'] if r['stav']!='beze změny'][:30]
     if simclr: md+=['',f'Mezery v simulovaném pohybu: díly {simclr["mezera_dilu_mm"]:.1f} mm, schod {simclr["odstup_schod_mm"]:.1f} mm (informativní).']
     md+=['','## Co tato kontrola nedělá','','- Pohyb se přizpůsobí nové geometrii a doladí se jen švih volných končetin; trup ani rozložení sil se znovu neoptimalizují.',
-      '- Rámy a vidlice v modelu se nepřekreslují – posouvá se servo a osa. Střet serva s vlastním rámem se nekontroluje.',
+      '- Rámy a vidlice v modelu se nepřekreslují – posouvá se servo a osa. Střet posunutého serva s vlastním rámem a sousedními články se jen hlásí jako varování; dokreslené úchyty v sítích dílů nejsou.',
       '- Chůze, sed a další pohyby se v této kontrole nepočítají (přepočítá je simulátor v prohlížeči).',
       f'- Dynamika je předkorigovaná podle statiky (jako u R13); bez předkorekce přelez nedoběhne. Krátké špičky na mezi serva má i výchozí {REV}.','- Zkoušky jiné výšky schodu počítají s tím, že robot výšku změří přesně a od 30. s přelez přizpůsobí (chyba měření ±2 mm toleranci zužuje; doladění švihu se u nich neopakuje).','- Robot se v simulaci řídí jen předem spočítanými povely bez zpětné vazby (bez IMU); skutečný robot s vyvažováním bude robustnější, bez něj méně.','- Fyzicky nic neověřeno.']
     open(os.path.join(outdir,'protokol.md'),'w').write('\n'.join(md)+'\n')

@@ -1,0 +1,980 @@
+{
+ "revize": "R16",
+ "krok": 2,
+ "poloh": 571,
+ "dvojice": [
+  {
+   "a": "pravá kyčel (otočný díl)",
+   "b": "pravé stehno",
+   "mm": 9.51,
+   "cas_s": 52.0
+  },
+  {
+   "a": "trup",
+   "b": "levé stehno",
+   "mm": 10.16,
+   "cas_s": 156.0
+  },
+  {
+   "a": "pravé chodidlo",
+   "b": "pravá holeň – návlek",
+   "mm": 10.28,
+   "cas_s": 131.7
+  },
+  {
+   "a": "pravé chodidlo",
+   "b": "pravá kyčel",
+   "mm": 10.3,
+   "cas_s": 116.7
+  },
+  {
+   "a": "levé chodidlo",
+   "b": "levá holeň – návlek",
+   "mm": 10.34,
+   "cas_s": 175.0
+  },
+  {
+   "a": "levé stehno",
+   "b": "levé chodidlo",
+   "mm": 10.59,
+   "cas_s": 124.0
+  },
+  {
+   "a": "levé chodidlo",
+   "b": "pravá holeň",
+   "mm": 10.69,
+   "cas_s": 51.3
+  },
+  {
+   "a": "trup",
+   "b": "pravé stehno",
+   "mm": 11.11,
+   "cas_s": 117.7
+  },
+  {
+   "a": "pravé stehno",
+   "b": "pravé chodidlo",
+   "mm": 11.47,
+   "cas_s": 115.7
+  },
+  {
+   "a": "levá kyčel (otočný díl)",
+   "b": "levé stehno",
+   "mm": 11.59,
+   "cas_s": 126.0
+  },
+  {
+   "a": "levá kyčel (otočný díl)",
+   "b": "pravá kyčel (otočný díl)",
+   "mm": 11.84,
+   "cas_s": 67.0
+  },
+  {
+   "a": "levé rameno",
+   "b": "trup – kryt",
+   "mm": 12.6,
+   "cas_s": 180.0
+  },
+  {
+   "a": "pravé rameno",
+   "b": "trup – kryt",
+   "mm": 12.6,
+   "cas_s": 180.0
+  },
+  {
+   "a": "krk",
+   "b": "hlava – kryt",
+   "mm": 13.45,
+   "cas_s": 122.0
+  },
+  {
+   "a": "levé chodidlo",
+   "b": "levá kyčel",
+   "mm": 13.79,
+   "cas_s": 124.0
+  }
+ ],
+ "sousedni": [
+  {
+   "a": "trup: servo Rameno · předozadní pohyb · L (ST0)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "pevně na rámu",
+   "mm": 0.0,
+   "mm_pred": 0.3,
+   "cas_s": null,
+   "stav": "nový dotyk"
+  },
+  {
+   "a": "trup: servo Rameno · předozadní pohyb · L (ST1)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "pevně na rámu",
+   "mm": 0.0,
+   "mm_pred": 0.12,
+   "cas_s": null,
+   "stav": "nový dotyk"
+  },
+  {
+   "a": "trup: servo Rameno · předozadní pohyb · L (ST2)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "pevně na rámu",
+   "mm": 0.0,
+   "mm_pred": 0.23,
+   "cas_s": null,
+   "stav": "nový dotyk"
+  },
+  {
+   "a": "trup: servo Rameno · předozadní pohyb · L (ST4)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "pevně na rámu",
+   "mm": 0.0,
+   "mm_pred": 2.11,
+   "cas_s": null,
+   "stav": "nový dotyk"
+  },
+  {
+   "a": "trup: servo Rameno · předozadní pohyb · P (ST0)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "pevně na rámu",
+   "mm": 0.0,
+   "mm_pred": 0.3,
+   "cas_s": null,
+   "stav": "nový dotyk"
+  },
+  {
+   "a": "trup: servo Rameno · předozadní pohyb · P (ST1)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "pevně na rámu",
+   "mm": 0.0,
+   "mm_pred": 0.12,
+   "cas_s": null,
+   "stav": "nový dotyk"
+  },
+  {
+   "a": "trup: servo Rameno · předozadní pohyb · P (ST2)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "pevně na rámu",
+   "mm": 0.0,
+   "mm_pred": 0.23,
+   "cas_s": null,
+   "stav": "nový dotyk"
+  },
+  {
+   "a": "trup: servo Rameno · předozadní pohyb · P (ST4)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "pevně na rámu",
+   "mm": 0.0,
+   "mm_pred": 2.11,
+   "cas_s": null,
+   "stav": "nový dotyk"
+  },
+  {
+   "a": "levé rameno: páka serva Rameno · předozadní pohyb · L (r8_horn_idler)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 3.18,
+   "cas_s": 0.0,
+   "stav": "nový dotyk"
+  },
+  {
+   "a": "levé rameno: páka serva Rameno · předozadní pohyb · L (r8_horn_screws)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 4.18,
+   "cas_s": 0.0,
+   "stav": "nový dotyk"
+  },
+  {
+   "a": "levé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 2.04,
+   "cas_s": 0.0,
+   "stav": "nový dotyk"
+  },
+  {
+   "a": "pravé rameno: páka serva Rameno · předozadní pohyb · P (r8_horn_idler)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 3.18,
+   "cas_s": 0.0,
+   "stav": "nový dotyk"
+  },
+  {
+   "a": "pravé rameno: páka serva Rameno · předozadní pohyb · P (r8_horn_screws)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 4.18,
+   "cas_s": 0.0,
+   "stav": "nový dotyk"
+  },
+  {
+   "a": "pravé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 2.04,
+   "cas_s": 0.0,
+   "stav": "nový dotyk"
+  },
+  {
+   "a": "trup: servo Rameno · předozadní pohyb · L (r8_ST_case_screw)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "pevně na rámu",
+   "mm": 0.12,
+   "mm_pred": 0.0,
+   "cas_s": null,
+   "stav": "dál"
+  },
+  {
+   "a": "trup: servo Rameno · předozadní pohyb · P (r8_ST_case_screw)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "pevně na rámu",
+   "mm": 0.12,
+   "mm_pred": 0.0,
+   "cas_s": null,
+   "stav": "dál"
+  },
+  {
+   "a": "levé rameno: páka serva Rameno · předozadní pohyb · L (r8_horn_driver)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 2.36,
+   "mm_pred": 3.13,
+   "cas_s": 187.0,
+   "stav": "blíž"
+  },
+  {
+   "a": "pravé rameno: páka serva Rameno · předozadní pohyb · P (r8_horn_driver)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 2.36,
+   "mm_pred": 3.13,
+   "cas_s": 37.7,
+   "stav": "blíž"
+  },
+  {
+   "a": "pravé rameno: servo Rameno · boční zdvih · P (ST2)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 2.47,
+   "mm_pred": 10.0,
+   "cas_s": 49.0,
+   "stav": "blíž"
+  },
+  {
+   "a": "levé rameno: servo Rameno · boční zdvih · L (ST2)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.22,
+   "mm_pred": 10.0,
+   "cas_s": 186.0,
+   "stav": "blíž"
+  },
+  {
+   "a": "levé rameno: servo Rameno · předozadní pohyb · L (ST5)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.96,
+   "mm_pred": 3.09,
+   "cas_s": 176.3,
+   "stav": "dál"
+  },
+  {
+   "a": "pravé rameno: servo Rameno · předozadní pohyb · P (ST5)",
+   "b": "trup: rám (r12_trup_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.96,
+   "mm_pred": 3.09,
+   "cas_s": 83.7,
+   "stav": "dál"
+  },
+  {
+   "a": "levé rameno: servo Rameno · předozadní pohyb · L (ST5)",
+   "b": "trup: servo Rameno · předozadní pohyb · L (ST0)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 0.0,
+   "cas_s": 0.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levé rameno: servo Rameno · předozadní pohyb · L (ST5)",
+   "b": "trup: servo Rameno · předozadní pohyb · L (ST1)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 0.0,
+   "cas_s": 0.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levé rameno: páka serva Rameno · předozadní pohyb · L (r8_horn_idler)",
+   "b": "trup: servo Rameno · předozadní pohyb · L (ST2)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 0.0,
+   "cas_s": 0.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: servo Rameno · boční zdvih · L (ST5)",
+   "b": "levé rameno: servo Rameno · boční zdvih · L (ST0)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 0.0,
+   "cas_s": 0.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: servo Rameno · boční zdvih · L (ST5)",
+   "b": "levé rameno: servo Rameno · boční zdvih · L (ST1)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 0.0,
+   "cas_s": 0.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: páka serva Rameno · boční zdvih · L (r8_horn_idler)",
+   "b": "levé rameno: servo Rameno · boční zdvih · L (ST2)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 0.0,
+   "cas_s": 0.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravé rameno: servo Rameno · předozadní pohyb · P (ST5)",
+   "b": "trup: servo Rameno · předozadní pohyb · P (ST0)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 0.0,
+   "cas_s": 0.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravé rameno: servo Rameno · předozadní pohyb · P (ST5)",
+   "b": "trup: servo Rameno · předozadní pohyb · P (ST1)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 0.0,
+   "cas_s": 0.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravé rameno: páka serva Rameno · předozadní pohyb · P (r8_horn_idler)",
+   "b": "trup: servo Rameno · předozadní pohyb · P (ST2)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 0.0,
+   "cas_s": 0.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: servo Rameno · boční zdvih · P (ST5)",
+   "b": "pravé rameno: servo Rameno · boční zdvih · P (ST0)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 0.0,
+   "cas_s": 0.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: servo Rameno · boční zdvih · P (ST5)",
+   "b": "pravé rameno: servo Rameno · boční zdvih · P (ST1)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 0.0,
+   "cas_s": 0.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: páka serva Rameno · boční zdvih · P (r8_horn_idler)",
+   "b": "pravé rameno: servo Rameno · boční zdvih · P (ST2)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.0,
+   "mm_pred": 0.0,
+   "cas_s": 0.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levé rameno: páka serva Rameno · předozadní pohyb · L (r8_horn_driver)",
+   "b": "trup: servo Rameno · předozadní pohyb · L (ST1)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.25,
+   "mm_pred": 0.25,
+   "cas_s": 189.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: páka serva Rameno · boční zdvih · L (r8_horn_driver)",
+   "b": "levé rameno: servo Rameno · boční zdvih · L (ST1)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.25,
+   "mm_pred": 0.25,
+   "cas_s": 75.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravé rameno: páka serva Rameno · předozadní pohyb · P (r8_horn_driver)",
+   "b": "trup: servo Rameno · předozadní pohyb · P (ST1)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.25,
+   "mm_pred": 0.25,
+   "cas_s": 189.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: páka serva Rameno · boční zdvih · P (r8_horn_driver)",
+   "b": "pravé rameno: servo Rameno · boční zdvih · P (ST1)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.25,
+   "mm_pred": 0.25,
+   "cas_s": 160.3,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "b": "trup: servo Rameno · předozadní pohyb · L (ST2)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.29,
+   "mm_pred": 0.29,
+   "cas_s": 90.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: rám (r11_clear_L_shoulder_roll_ram)",
+   "b": "levé rameno: servo Rameno · boční zdvih · L (ST2)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.29,
+   "mm_pred": 0.29,
+   "cas_s": 49.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "b": "trup: servo Rameno · předozadní pohyb · P (ST2)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.29,
+   "mm_pred": 0.29,
+   "cas_s": 64.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: rám (r11_clear_L_shoulder_roll_ram)",
+   "b": "pravé rameno: servo Rameno · boční zdvih · P (ST2)",
+   "druh": "v pohybu kloubu",
+   "mm": 0.29,
+   "mm_pred": 0.29,
+   "cas_s": 45.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levé rameno: páka serva Rameno · předozadní pohyb · L (r8_horn_screws)",
+   "b": "trup: servo Rameno · předozadní pohyb · L (ST2)",
+   "druh": "v pohybu kloubu",
+   "mm": 1.05,
+   "mm_pred": 1.05,
+   "cas_s": 18.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: páka serva Rameno · boční zdvih · L (r8_horn_screws)",
+   "b": "levé rameno: servo Rameno · boční zdvih · L (ST2)",
+   "druh": "v pohybu kloubu",
+   "mm": 1.05,
+   "mm_pred": 1.05,
+   "cas_s": 153.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravé rameno: páka serva Rameno · předozadní pohyb · P (r8_horn_screws)",
+   "b": "trup: servo Rameno · předozadní pohyb · P (ST2)",
+   "druh": "v pohybu kloubu",
+   "mm": 1.05,
+   "mm_pred": 1.05,
+   "cas_s": 155.3,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: páka serva Rameno · boční zdvih · P (r8_horn_screws)",
+   "b": "pravé rameno: servo Rameno · boční zdvih · P (ST2)",
+   "druh": "v pohybu kloubu",
+   "mm": 1.05,
+   "mm_pred": 1.05,
+   "cas_s": 146.3,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levé rameno: páka serva Rameno · předozadní pohyb · L (r8_horn_screws)",
+   "b": "trup: servo Rameno · předozadní pohyb · L (ST1)",
+   "druh": "v pohybu kloubu",
+   "mm": 2.27,
+   "mm_pred": 2.27,
+   "cas_s": 82.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: páka serva Rameno · boční zdvih · L (r8_horn_screws)",
+   "b": "levé rameno: servo Rameno · boční zdvih · L (ST1)",
+   "druh": "v pohybu kloubu",
+   "mm": 2.27,
+   "mm_pred": 2.27,
+   "cas_s": 72.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravé rameno: páka serva Rameno · předozadní pohyb · P (r8_horn_screws)",
+   "b": "trup: servo Rameno · předozadní pohyb · P (ST1)",
+   "druh": "v pohybu kloubu",
+   "mm": 2.27,
+   "mm_pred": 2.27,
+   "cas_s": 123.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: páka serva Rameno · boční zdvih · P (r8_horn_screws)",
+   "b": "pravé rameno: servo Rameno · boční zdvih · P (ST1)",
+   "druh": "v pohybu kloubu",
+   "mm": 2.27,
+   "mm_pred": 2.27,
+   "cas_s": 133.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "b": "trup: servo Rameno · předozadní pohyb · L (ST1)",
+   "druh": "v pohybu kloubu",
+   "mm": 2.42,
+   "mm_pred": 2.42,
+   "cas_s": 51.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: rám (r11_clear_L_shoulder_roll_ram)",
+   "b": "levé rameno: servo Rameno · boční zdvih · L (ST1)",
+   "druh": "v pohybu kloubu",
+   "mm": 2.42,
+   "mm_pred": 2.42,
+   "cas_s": 163.3,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "b": "trup: servo Rameno · předozadní pohyb · P (ST1)",
+   "druh": "v pohybu kloubu",
+   "mm": 2.42,
+   "mm_pred": 2.42,
+   "cas_s": 83.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: rám (r11_clear_L_shoulder_roll_ram)",
+   "b": "pravé rameno: servo Rameno · boční zdvih · P (ST1)",
+   "druh": "v pohybu kloubu",
+   "mm": 2.42,
+   "mm_pred": 2.42,
+   "cas_s": 21.3,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: servo Rameno · boční zdvih · L (ST5)",
+   "b": "levé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.09,
+   "mm_pred": 3.09,
+   "cas_s": 146.3,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: servo Rameno · boční zdvih · P (ST5)",
+   "b": "pravé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.09,
+   "mm_pred": 3.09,
+   "cas_s": 33.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: páka serva Rameno · boční zdvih · L (r8_horn_driver)",
+   "b": "levé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.13,
+   "mm_pred": 3.13,
+   "cas_s": 90.3,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: páka serva Rameno · boční zdvih · P (r8_horn_driver)",
+   "b": "pravé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.13,
+   "mm_pred": 3.13,
+   "cas_s": 37.3,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levé rameno: servo Rameno · předozadní pohyb · L (ST5)",
+   "b": "trup: servo Rameno · předozadní pohyb · L (ST4)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.14,
+   "mm_pred": 3.14,
+   "cas_s": 156.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: servo Rameno · boční zdvih · L (ST5)",
+   "b": "levé rameno: servo Rameno · boční zdvih · L (ST4)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.14,
+   "mm_pred": 3.14,
+   "cas_s": 147.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravé rameno: servo Rameno · předozadní pohyb · P (ST5)",
+   "b": "trup: servo Rameno · předozadní pohyb · P (ST4)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.14,
+   "mm_pred": 3.14,
+   "cas_s": 108.3,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: servo Rameno · boční zdvih · P (ST5)",
+   "b": "pravé rameno: servo Rameno · boční zdvih · P (ST4)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.14,
+   "mm_pred": 3.14,
+   "cas_s": 18.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: páka serva Rameno · boční zdvih · L (r8_horn_idler)",
+   "b": "levé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.18,
+   "mm_pred": 3.18,
+   "cas_s": 49.3,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: páka serva Rameno · boční zdvih · P (r8_horn_idler)",
+   "b": "pravé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.18,
+   "mm_pred": 3.18,
+   "cas_s": 31.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: rám (r11_clear_L_shoulder_roll_ram)",
+   "b": "levé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.34,
+   "mm_pred": 3.34,
+   "cas_s": 74.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: rám (r11_clear_L_shoulder_roll_ram)",
+   "b": "pravé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.34,
+   "mm_pred": 3.34,
+   "cas_s": 77.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levé rameno: servo Rameno · předozadní pohyb · L (ST5)",
+   "b": "trup: servo Rameno · předozadní pohyb · L (ST2)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.9,
+   "mm_pred": 3.9,
+   "cas_s": 82.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: servo Rameno · boční zdvih · L (ST5)",
+   "b": "levé rameno: servo Rameno · boční zdvih · L (ST2)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.9,
+   "mm_pred": 3.9,
+   "cas_s": 72.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravé rameno: servo Rameno · předozadní pohyb · P (ST5)",
+   "b": "trup: servo Rameno · předozadní pohyb · P (ST2)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.9,
+   "mm_pred": 3.9,
+   "cas_s": 123.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: servo Rameno · boční zdvih · P (ST5)",
+   "b": "pravé rameno: servo Rameno · boční zdvih · P (ST2)",
+   "druh": "v pohybu kloubu",
+   "mm": 3.9,
+   "mm_pred": 3.9,
+   "cas_s": 133.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: páka serva Rameno · boční zdvih · L (r8_horn_screws)",
+   "b": "levé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 4.18,
+   "mm_pred": 4.18,
+   "cas_s": 74.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: páka serva Rameno · boční zdvih · P (r8_horn_screws)",
+   "b": "pravé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "druh": "v pohybu kloubu",
+   "mm": 4.18,
+   "mm_pred": 4.18,
+   "cas_s": 87.3,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levé rameno: páka serva Rameno · předozadní pohyb · L (r8_horn_idler)",
+   "b": "trup: servo Rameno · předozadní pohyb · L (ST4)",
+   "druh": "v pohybu kloubu",
+   "mm": 5.36,
+   "mm_pred": 5.36,
+   "cas_s": 26.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: páka serva Rameno · boční zdvih · L (r8_horn_idler)",
+   "b": "levé rameno: servo Rameno · boční zdvih · L (ST4)",
+   "druh": "v pohybu kloubu",
+   "mm": 5.36,
+   "mm_pred": 5.36,
+   "cas_s": 24.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravé rameno: páka serva Rameno · předozadní pohyb · P (r8_horn_idler)",
+   "b": "trup: servo Rameno · předozadní pohyb · P (ST4)",
+   "druh": "v pohybu kloubu",
+   "mm": 5.36,
+   "mm_pred": 5.36,
+   "cas_s": 123.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: páka serva Rameno · boční zdvih · P (r8_horn_idler)",
+   "b": "pravé rameno: servo Rameno · boční zdvih · P (ST4)",
+   "druh": "v pohybu kloubu",
+   "mm": 5.36,
+   "mm_pred": 5.36,
+   "cas_s": 45.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levé rameno: páka serva Rameno · předozadní pohyb · L (r8_horn_screws)",
+   "b": "trup: servo Rameno · předozadní pohyb · L (ST4)",
+   "druh": "v pohybu kloubu",
+   "mm": 5.88,
+   "mm_pred": 5.88,
+   "cas_s": 130.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravé rameno: páka serva Rameno · předozadní pohyb · P (r8_horn_screws)",
+   "b": "trup: servo Rameno · předozadní pohyb · P (ST4)",
+   "druh": "v pohybu kloubu",
+   "mm": 5.93,
+   "mm_pred": 5.93,
+   "cas_s": 83.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levé rameno: páka serva Rameno · předozadní pohyb · L (r8_horn_driver)",
+   "b": "trup: servo Rameno · předozadní pohyb · L (ST0)",
+   "druh": "v pohybu kloubu",
+   "mm": 6.3,
+   "mm_pred": 6.3,
+   "cas_s": 82.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: páka serva Rameno · boční zdvih · L (r8_horn_driver)",
+   "b": "levé rameno: servo Rameno · boční zdvih · L (ST0)",
+   "druh": "v pohybu kloubu",
+   "mm": 6.3,
+   "mm_pred": 6.3,
+   "cas_s": 72.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravé rameno: páka serva Rameno · předozadní pohyb · P (r8_horn_driver)",
+   "b": "trup: servo Rameno · předozadní pohyb · P (ST0)",
+   "druh": "v pohybu kloubu",
+   "mm": 6.3,
+   "mm_pred": 6.3,
+   "cas_s": 123.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: páka serva Rameno · boční zdvih · P (r8_horn_driver)",
+   "b": "pravé rameno: servo Rameno · boční zdvih · P (ST0)",
+   "druh": "v pohybu kloubu",
+   "mm": 6.3,
+   "mm_pred": 6.3,
+   "cas_s": 133.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "b": "trup: servo Rameno · předozadní pohyb · L (ST4)",
+   "druh": "v pohybu kloubu",
+   "mm": 7.22,
+   "mm_pred": 7.22,
+   "cas_s": 64.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: rám (r11_clear_L_shoulder_roll_ram)",
+   "b": "levé rameno: servo Rameno · boční zdvih · L (ST4)",
+   "druh": "v pohybu kloubu",
+   "mm": 7.22,
+   "mm_pred": 7.22,
+   "cas_s": 120.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "b": "trup: servo Rameno · předozadní pohyb · P (ST4)",
+   "druh": "v pohybu kloubu",
+   "mm": 7.22,
+   "mm_pred": 7.22,
+   "cas_s": 48.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: rám (r11_clear_L_shoulder_roll_ram)",
+   "b": "pravé rameno: servo Rameno · boční zdvih · P (ST4)",
+   "druh": "v pohybu kloubu",
+   "mm": 7.22,
+   "mm_pred": 7.22,
+   "cas_s": 35.3,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: rám (r11_clear_L_shoulder_roll_ram)",
+   "b": "pravé rameno: servo Rameno · boční zdvih · P (ST0)",
+   "druh": "v pohybu kloubu",
+   "mm": 7.91,
+   "mm_pred": 7.91,
+   "cas_s": 49.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: páka serva Rameno · boční zdvih · P (r8_horn_screws)",
+   "b": "pravé rameno: servo Rameno · boční zdvih · P (ST4)",
+   "druh": "v pohybu kloubu",
+   "mm": 7.95,
+   "mm_pred": 7.95,
+   "cas_s": 49.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levé rameno: páka serva Rameno · předozadní pohyb · L (r8_horn_screws)",
+   "b": "trup: servo Rameno · předozadní pohyb · L (ST0)",
+   "druh": "v pohybu kloubu",
+   "mm": 8.37,
+   "mm_pred": 8.37,
+   "cas_s": 82.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: páka serva Rameno · boční zdvih · L (r8_horn_screws)",
+   "b": "levé rameno: servo Rameno · boční zdvih · L (ST0)",
+   "druh": "v pohybu kloubu",
+   "mm": 8.37,
+   "mm_pred": 8.37,
+   "cas_s": 72.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravé rameno: páka serva Rameno · předozadní pohyb · P (r8_horn_screws)",
+   "b": "trup: servo Rameno · předozadní pohyb · P (ST0)",
+   "druh": "v pohybu kloubu",
+   "mm": 8.37,
+   "mm_pred": 8.37,
+   "cas_s": 123.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravá paže: páka serva Rameno · boční zdvih · P (r8_horn_screws)",
+   "b": "pravé rameno: servo Rameno · boční zdvih · P (ST0)",
+   "druh": "v pohybu kloubu",
+   "mm": 8.37,
+   "mm_pred": 8.37,
+   "cas_s": 133.7,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "b": "trup: servo Rameno · předozadní pohyb · L (ST0)",
+   "druh": "v pohybu kloubu",
+   "mm": 8.51,
+   "mm_pred": 8.51,
+   "cas_s": 129.3,
+   "stav": "beze změny"
+  },
+  {
+   "a": "pravé rameno: rám (r11_clear_L_shoulder_pitch_ram)",
+   "b": "trup: servo Rameno · předozadní pohyb · P (ST0)",
+   "druh": "v pohybu kloubu",
+   "mm": 8.51,
+   "mm_pred": 8.51,
+   "cas_s": 132.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: rám (r11_clear_L_shoulder_roll_ram)",
+   "b": "levé rameno: servo Rameno · boční zdvih · L (ST0)",
+   "druh": "v pohybu kloubu",
+   "mm": 9.51,
+   "mm_pred": 9.51,
+   "cas_s": 146.0,
+   "stav": "beze změny"
+  },
+  {
+   "a": "levá paže: páka serva Rameno · boční zdvih · L (r8_horn_screws)",
+   "b": "levé rameno: servo Rameno · boční zdvih · L (ST4)",
+   "druh": "v pohybu kloubu",
+   "mm": 9.62,
+   "mm_pred": 9.62,
+   "cas_s": 146.0,
+   "stav": "beze změny"
+  }
+ ],
+ "varovani": [
+  "trup: servo Rameno · předozadní pohyb · L (ST0) × trup: rám (r12_trup_ram) (pevně na rámu): dotyk (předtím 0.3 mm) – zkontrolovat úchyt serva vůči rámu",
+  "trup: servo Rameno · předozadní pohyb · L (ST1) × trup: rám (r12_trup_ram) (pevně na rámu): dotyk (předtím 0.1 mm) – zkontrolovat úchyt serva vůči rámu",
+  "trup: servo Rameno · předozadní pohyb · L (ST2) × trup: rám (r12_trup_ram) (pevně na rámu): dotyk (předtím 0.2 mm) – zkontrolovat úchyt serva vůči rámu",
+  "trup: servo Rameno · předozadní pohyb · L (ST4) × trup: rám (r12_trup_ram) (pevně na rámu): dotyk (předtím 2.1 mm) – zkontrolovat úchyt serva vůči rámu",
+  "trup: servo Rameno · předozadní pohyb · P (ST0) × trup: rám (r12_trup_ram) (pevně na rámu): dotyk (předtím 0.3 mm) – zkontrolovat úchyt serva vůči rámu",
+  "trup: servo Rameno · předozadní pohyb · P (ST1) × trup: rám (r12_trup_ram) (pevně na rámu): dotyk (předtím 0.1 mm) – zkontrolovat úchyt serva vůči rámu",
+  "trup: servo Rameno · předozadní pohyb · P (ST2) × trup: rám (r12_trup_ram) (pevně na rámu): dotyk (předtím 0.2 mm) – zkontrolovat úchyt serva vůči rámu",
+  "trup: servo Rameno · předozadní pohyb · P (ST4) × trup: rám (r12_trup_ram) (pevně na rámu): dotyk (předtím 2.1 mm) – zkontrolovat úchyt serva vůči rámu",
+  "levé rameno: páka serva Rameno · předozadní pohyb · L (r8_horn_idler) × trup: rám (r12_trup_ram) (v pohybu kloubu): dotyk v 0.0 s (předtím 3.2 mm) – zkontrolovat úchyt serva vůči rámu",
+  "levé rameno: páka serva Rameno · předozadní pohyb · L (r8_horn_screws) × trup: rám (r12_trup_ram) (v pohybu kloubu): dotyk v 0.0 s (předtím 4.2 mm) – zkontrolovat úchyt serva vůči rámu",
+  "levé rameno: rám (r11_clear_L_shoulder_pitch_ram) × trup: rám (r12_trup_ram) (v pohybu kloubu): dotyk v 0.0 s (předtím 2.0 mm) – zkontrolovat úchyt serva vůči rámu",
+  "pravé rameno: páka serva Rameno · předozadní pohyb · P (r8_horn_idler) × trup: rám (r12_trup_ram) (v pohybu kloubu): dotyk v 0.0 s (předtím 3.2 mm) – zkontrolovat úchyt serva vůči rámu",
+  "pravé rameno: páka serva Rameno · předozadní pohyb · P (r8_horn_screws) × trup: rám (r12_trup_ram) (v pohybu kloubu): dotyk v 0.0 s (předtím 4.2 mm) – zkontrolovat úchyt serva vůči rámu",
+  "pravé rameno: rám (r11_clear_L_shoulder_pitch_ram) × trup: rám (r12_trup_ram) (v pohybu kloubu): dotyk v 0.0 s (předtím 2.0 mm) – zkontrolovat úchyt serva vůči rámu"
+ ],
+ "poznamka": "Jmenovitá geometrie sítí dílů v polohách výchozího pohybu (6 Hz); mezi polohami může být mezera menší. Úchyty dokreslené ve stránce nejsou v sítích – jejich střet se nekontroluje."
+}

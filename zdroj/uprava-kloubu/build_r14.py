@@ -45,7 +45,7 @@ panel='''<aside id="r14" aria-label="Úprava kloubů"><button id="r14Toggle" ari
 <h3>Úprava kloubů</h3><p id="r14State"></p>
 <label for="r14Joint">Kloub</label><select id="r14Joint"></select>
 <label class="r14-check"><input type="checkbox" id="r14Mirror" checked><span>Stejnou úpravu zrcadlit na druhou stranu těla</span></label>
-<label for="r14R0">Do strany (+ k levému boku robota), mm</label><div class="r14-row"><input type="range" id="r14R0" min="-40" max="40" step="0.5"><input type="number" id="r14N0" min="-40" max="40" step="0.5" aria-label="Posun do strany v mm"></div>
+<label for="r14R0">Do strany (+ k levému boku robota), mm</label><div class="r14-row"><input type="range" id="r14R0" min="-40" max="40" step="0.5"><input type="number" id="r14N0" min="-40" max="40" step="0.5" aria-label="Posun do strany v mm"></div><p class="r14-hint" id="r14Dir" aria-live="polite"></p>
 <label for="r14R1">Dozadu (+) / dopředu (−), mm</label><div class="r14-row"><input type="range" id="r14R1" min="-40" max="40" step="0.5"><input type="number" id="r14N1" min="-40" max="40" step="0.5" aria-label="Posun dozadu v mm"></div>
 <label for="r14R2">Nahoru (+) / dolů (−), mm</label><div class="r14-row"><input type="range" id="r14R2" min="-40" max="40" step="0.5"><input type="number" id="r14N2" min="-40" max="40" step="0.5" aria-label="Posun nahoru v mm"></div>
 <label for="r14Rot">Natočení těla serva kolem jeho osy: <span id="r14RotOut">0°</span></label><input type="range" id="r14Rot" min="-180" max="180" step="5">
