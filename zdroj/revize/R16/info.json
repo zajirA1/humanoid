@@ -1,0 +1,73 @@
+{
+ "revize": "R16",
+ "predchozi": "R15",
+ "prepocet": "20261122-235312-0712f0",
+ "verze_aplikace": "0.6",
+ "datum": "2026-11-23T08:47:52",
+ "upravy": {
+  "8": {
+   "kloub": "Rameno · předozadní pohyb · L",
+   "posun_mm": [
+    -26.5,
+    0.0,
+    0.0
+   ],
+   "nese_dalsi_dily": true,
+   "natoceni_serva_deg": 0.0
+  },
+  "18": {
+   "kloub": "Rameno · předozadní pohyb · P",
+   "posun_mm": [
+    26.5,
+    0.0,
+    0.0
+   ],
+   "nese_dalsi_dily": true,
+   "natoceni_serva_deg": 0.0
+  }
+ },
+ "zaklad": {
+  "8": {
+   "d": [
+    -26.5,
+    0.0,
+    0.0
+   ],
+   "E": [
+    -26.5,
+    0.0,
+    0.0
+   ],
+   "rot": 0.0
+  },
+  "18": {
+   "d": [
+    26.5,
+    0.0,
+    0.0
+   ],
+   "E": [
+    26.5,
+    0.0,
+    0.0
+   ],
+   "rot": 0.0
+  }
+ },
+ "souhrn": {
+  "max_vyuziti": 0.70313,
+  "mezera_dilu_mm": 9.505,
+  "odstup_schod_mm": 3.401,
+  "dynamika": {
+   "nominal": true,
+   "schod 205 mm": true,
+   "schod 215 mm": true,
+   "tření 0,35": true,
+   "hmotnost +10 %": true,
+   "o 5 mm blíž": true,
+   "serva 85 %": true,
+   "schod 202 mm": true,
+   "schod 218 mm": true
+  }
+ }
+}
