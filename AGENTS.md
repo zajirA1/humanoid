@@ -48,9 +48,9 @@ export 3MF s úchyty) a vyjme data Konda do `web/app/kondo-data.json` (servíruj
 Workflow *Nová revize* (`.github/workflows/nova-revize.yml`, vstup = označení prošlého plného přepočtu) spustí
 `zdroj/revize/nova_revize.py`: posuny serv zapeče do `kontrola/data/model.json` (`zaklad`: d = posun osy a serva, E = posun visících dílů),
 převezme přizpůsobený pohyb (`pohyb.json` z přepočtu), spustí plnou kontrolu s `--vychozi`, přestaví `web/app/emil-h22.html`
-(posunutá serva, dokreslené zjednodušené úchyty, oddíl revize nahoře, verze aplikace +0,1) a commitne do `main`. Podklady revize jsou
+(posunutá serva, rám přizpůsobený posunu, oddíl revize nahoře, verze aplikace +0,1) a commitne do `main`. Podklady revize jsou
 v `zdroj/revize/R<N>/` (vč. `rozpis.json`; do stránky ho vkládá `zdroj/revize/rozpis_stranka.py`). Po commitu spustí workflow Kontrola. Nic nenasazuje; kopii stránky na e2 `revize/H22/R<N>/` a předání dělá Claude/GPT. Smí ho spustit Claude/GPT
-na pokyn majitele. Úpravy v panelu se k zapečeným posunům přičítají (`r14engine.mergeEdits`, `prizpusob.js`). Stránka R15 se staví
+na pokyn majitele. Úpravy v panelu se k zapečeným posunům přičítají (`r14engine.mergeEdits`, `prizpusob.js`). **Rám se posunu serva přizpůsobí sám** – okolí pouzdra, páky a vidlice se posune se servem a plynule přejde do zbytku rámu; stejný výpočet v kontrole (`kontrola/ram.py`, volá ho `nacti_geometrii` i `rozpis.py`) a v prohlížeči (`r14ui.js` `r14RamDeform`, i export 3MF). Konstanty R0/R_MIN/K musí být v obou stejné. Odhad mezer v prohlížeči (mračna bodů) přetvoření rámu nezná. Stránka R15 se staví
 ze zmrazených dat `zdroj/r15/data/`; další revize se nanášejí na hotovou stránku.
 
 ## Přepočet úpravy

@@ -23,11 +23,13 @@ def vloz(s, rz, rev=None, prev=None):
     novy = [r for r in zm if r['stav'] in ('nový dotyk', 'blíž pod 2 mm')]
     if var:
         dily = list(dict.fromkeys(r['a'].split(' (')[0] + ' × ' + r['b'].split(' (')[0] for r in novy))
-        warn = (f'<p class="rev-warn" id="revServa"><b>Pozor – posunutá serva se v modelu dotýkají vlastního rámu.</b> Kontrola po jednotlivých dílech našla {len(novy)} nových dotyků nebo průniků '
+        warn = (f'<p class="rev-warn" id="revServa"><b>Pozor – posunutá serva se v modelu dotýkají rámu i po jeho přizpůsobení.</b> Kontrola po jednotlivých dílech našla {len(novy)} nových dotyků nebo průniků '
                 f'(proti {H.escape(prev or "předchozí revizi")}): {H.escape("; ".join(dily[:4]))}{" a další" if len(dily) > 4 else ""}. Automatická kontrola mezery mezi články kloubu a uvnitř jednoho článku '
-                'nevidí, proto revize prošla. Než se podle ní bude stavět, je potřeba upravit rám (výřez, jiný úchyt) nebo posun serva. Podrobně v rozpisu níže.</p>')
-        k = s.index('</div></div>', s.index('class="r13-kpis"', a)) + len('</div></div>')
-        s = s[:k] + warn + s[k:]
+                'nevidí, proto revize prošla. Než se podle ní bude stavět, je potřeba rám upravit ručně nebo změnit posun serva. Podrobně v rozpisu níže.</p>')
+    else:
+        warn = ''
+    k = s.index('</div></div>', s.index('class="r13-kpis"', a)) + len('</div></div>')
+    s = s[:k] + warn + s[k:]
     rows_d = ''.join(f'<tr><th scope="row">{H.escape(d["a"])} × {H.escape(d["b"])}</th><td>{cz(d["mm"], 2)} mm</td><td>{cz(d["cas_s"], 1)} s</td></tr>' for d in rz.get('dvojice', [])[:12])
     rows_s = ''.join(f'<tr><th scope="row">{H.escape(r["a"])}</th><td>{H.escape(r["b"])}</td><td>{H.escape(r["druh"])}</td><td>{cz(r["mm"], 2)} mm</td><td>{cz(r["mm_pred"], 2)} mm</td>'
                      f'<td class="{"r13-no" if r in novy else ""}">{H.escape(r["stav"])}</td></tr>' for r in zm[:30])
@@ -36,14 +38,19 @@ def vloz(s, rz, rev=None, prev=None):
             f'<div class="r13-scroll"><table><thead><tr><th>Dvojice dílů</th><th>Minimum</th><th>Čas</th></tr></thead><tbody>{rows_d}</tbody></table></div>')
     if zm:
         blok += (f'<p>Díly u posunutých kloubů po jednotlivých dílech proti {H.escape(prev or "předchozí revizi")} (servo a jeho rám, článek kloubu a rodič). Ve stejném článku a v kloubu se díly '
-                 'stýkají záměrně, proto je automatická kontrola vynechává; tady se hlásí jen to, co se posunem změnilo. Varování = nový dotyk nebo přiblížení pod 2 mm.</p>'
+                 'stýkají záměrně, proto je automatická kontrola vynechává; tady se hlásí jen to, co se posunem změnilo. Rám je už přizpůsobený posunu (okolí serva se posune s ním). '
+                 'Varování = nový dotyk nebo přiblížení pod 2 mm.</p>'
                  f'<div class="r13-scroll"><table><thead><tr><th>Díl</th><th>Proti</th><th>Kde</th><th>{H.escape(rev)}</th><th>{H.escape(prev or "předtím")}</th><th>Stav</th></tr></thead><tbody>{rows_s}</tbody></table></div>')
     blok += f'<p>{H.escape(rz.get("poznamka", ""))}</p></details><!--/revRozpis-->'
     k = s.index('<details><summary>Co tato revize neověřuje</summary>', a)
     s = s[:k] + blok + s[k:]
     # texty o tom, co se nekontroluje
-    s = s.replace('Úchyty jsou jen zjednodušené desky; pevnost, tvar pro tisk a střet serva s vlastním rámem se nekontrolují.',
-                  'Úchyty jsou jen zjednodušené desky; pevnost a tvar pro tisk se nekontrolují. Střet serva s rámem se kontroluje jen po sítích původních dílů – dokreslené úchyty v nich nejsou.', 1)
+    for stary in ('Úchyty jsou jen zjednodušené desky; pevnost, tvar pro tisk a střet serva s vlastním rámem se nekontrolují.',
+                  'Úchyty jsou jen zjednodušené desky; pevnost a tvar pro tisk se nekontrolují. Střet serva s rámem se kontroluje jen po sítích původních dílů – dokreslené úchyty v nich nejsou.'):
+        s = s.replace(stary, 'Rám je přizpůsobený jen plynulým přetvořením (kontrola/ram.py); pevnost a tvar pro tisk se nekontrolují, střety přetvořeného rámu hlásí rozpis po dílech.', 1)
+    s = s.replace('Měděné desky v modelu jsou dokreslené úchyty (bočnice a příčka vidlice) – zjednodušené, rozměry podle původní vidlice, nejsou to díly k tisku.',
+                  'Rám se v modelu sám přizpůsobí posunu serva: okolí pouzdra, páky a vidlice se posune spolu se servem a plynule přejde do zbytku rámu – zjednodušené přetvoření, ne díl k tisku.', 1)
+    s = s.replace('úchyty jsou dokreslené zjednodušeně', 'rám se jim přizpůsobí zjednodušeně', 1)
     s = s.replace('Rozpis mezer po dílech v dialogu Mezery dílů je z R13.', f'Rozpis mezer po dílech pro přelez {rev} je v oddílu výše; dialog Mezery dílů (ostatní pohyby) je z R13.', 1)
     s = s.replace('Rozpis po jednotlivých dílech níže je z R13.', f'Rozpis přelezu po dílech je v oddílu {rev} nahoře; dialog níže (ostatní pohyby) je z R13.', 1)
     return s

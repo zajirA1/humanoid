@@ -47,9 +47,11 @@ def minima(G,pairs,ws,cut=CUT):
 def nacti_dily(edits,odkazy=None):
     """Jednotlivé díly (ne skupiny) se stejným posunem jako PR.nacti_geometrii."""
     import fcl,gzip
+    import ram
     items=json.load(gzip.open(os.path.join(PR.DATA,'geometrie.json.gz'),'rt')); out=[]
+    items=[dict(it,v=np.array(it['v'],float).reshape(-1,3)) for it in items]; ram.prizpusob(items,edits,PR.PAR)
     for it in items:
-        v=np.array(it['v'],float).reshape(-1,3); f=np.array(it['f'],int).reshape(-1,3); j=it['owner']; e=edits.get(str(j)) if isinstance(j,int) else None
+        v=it['v']; f=np.array(it['f'],int).reshape(-1,3); j=it['owner']; e=edits.get(str(j)) if isinstance(j,int) else None; zm=bool(it.get('_ram'))
         if e and it['kind']=='cad' and not it['frame'] and j<22:
             d=np.array(e['d'],float)
             if e.get('rot'):
@@ -57,9 +59,10 @@ def nacti_dily(edits,odkazy=None):
                 if it['link']==PR.PAR[j]: v=v@Rr.T+tr
             if 'E' in e: v=v+(d-np.array(e['E'],float) if it['link']==j else d)
             elif not (e.get('carry') and it['link']==j): v=v+d
+            zm=True
         m=fcl.BVHModel(); m.beginModel(len(v),len(f)); m.addSubModel(np.ascontiguousarray(v,float),np.ascontiguousarray(f,np.int32)); m.endModel()
         lo,hi=v.min(0),v.max(0); c=np.array([[x,y,zz] for x in (lo[0],hi[0]) for y in (lo[1],hi[1]) for zz in (lo[2],hi[2])])
-        out.append(dict(key=it['key'],link=it['link'],owner=j,kind=it['kind'],frame=bool(it['frame']),obj=fcl.CollisionObject(m,fcl.Transform()),corners=c))
+        out.append(dict(key=it['key'],link=it['link'],owner=j,kind=it['kind'],frame=bool(it['frame']),zm=zm,obj=fcl.CollisionObject(m,fcl.Transform()),corners=c))
     return out
 def jmeno_dilu(d):
     k=d['key']; o=d['owner']
@@ -100,8 +103,9 @@ def rozpis(M,ed,ed_base,krok=1,log=print,polohy=None):
         stat=[];poh=[]
         for j in zmena:
             L=PAR[j]
-            mov=[i for i,d in enumerate(D1) if d['owner']==j and d['link']==L]
-            stat+=[(a,b) for a in mov for b,d in enumerate(D1) if d['link']==L and b not in mov]
+            for LL in (L,j):
+                mov=[i for i,d in enumerate(D1) if d['link']==LL and (d['zm'] or D0[i]['zm'])]
+                stat+=[(a,b) for a in mov for b,d in enumerate(D1) if d['link']==LL and b!=a and not (b in mov and b<a)]
             poh+=[(a,b) for a,d in enumerate(D1) if d['link']==j for b,e in enumerate(D1) if e['link']==L]
             poh+=[(a,b) for a,d in enumerate(D1) if d['link']<22 and par(d['link'])==j for b,e in enumerate(D1) if e['link']==j]
         stat=list(dict.fromkeys(stat)); poh=list(dict.fromkeys(poh))
@@ -123,7 +127,7 @@ def rozpis(M,ed,ed_base,krok=1,log=print,polohy=None):
         log('posunutá serva: dvojic dílů',len(stat),'+',len(poh))
     log('rozpis hotový: nejmenší',dvojice[0]['mm'] if dvojice else None,'sousední varování',len(varovani))
     return dict(revize=M.get('revize'),krok=krok,poloh=len(idx),dvojice=dvojice,sousedni=sousedni,varovani=varovani,
-                poznamka='Jmenovitá geometrie sítí dílů v polohách výchozího pohybu (6 Hz); mezi polohami může být mezera menší. Úchyty dokreslené ve stránce nejsou v sítích – jejich střet se nekontroluje.')
+                poznamka='Jmenovitá geometrie sítí dílů v polohách výchozího pohybu (6 Hz); mezi polohami může být mezera menší. Rám je přizpůsobený posunu serva plynulým přetvořením (kontrola/ram.py) – skutečný díl bude jiný, výsledek je odhad.')
 
 if __name__=='__main__':
     out=sys.argv[1]; krok=int(sys.argv[sys.argv.index('--krok')+1]) if '--krok' in sys.argv else 1

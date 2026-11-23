@@ -26,8 +26,10 @@ def nacti_geometrii(edits):
     def bvh(v,f):
         m=fcl.BVHModel(); m.beginModel(len(v),len(f)); m.addSubModel(np.ascontiguousarray(v,float),np.ascontiguousarray(f,np.int32)); m.endModel(); return m
     groups={}
+    import ram   # rám se přizpůsobí posunu serva (stejně jako v prohlížeči)
+    items=[dict(it,v=np.array(it['v'],float).reshape(-1,3)) for it in items]; ram.prizpusob(items,edits,PAR)
     for it in items:
-        v=np.array(it['v'],float).reshape(-1,3); f=np.array(it['f'],int).reshape(-1,3); j=it['owner']; e=edits.get(str(j)) if isinstance(j,int) else None
+        v=it['v']; f=np.array(it['f'],int).reshape(-1,3); j=it['owner']; e=edits.get(str(j)) if isinstance(j,int) else None
         if e and it['kind']=='cad' and not it['frame'] and j<22:
             d=np.array(e['d'],float)
             if e.get('rot'):

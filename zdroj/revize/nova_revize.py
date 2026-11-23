@@ -9,11 +9,11 @@ Postup (nic nenasazuje):
     posuny serv se zapečou do model.json jako „zaklad“ (osa, servo, hmotnost; visící díly přes E),
  3. plná kontrola nové revize s --vychozi (srovnávací hodnoty kontrola/data/vychozi*.json), musí projít,
  4. jmenovitá dynamika po polohách, statika ze stejného jádra jako stránka,
- 5. stránka web/app/emil-h22.html: nový pohyb a zatížení, zapečené posuny (servo posunuté, úchyty dokreslené),
+ 5. stránka web/app/emil-h22.html: nový pohyb a zatížení, zapečené posuny (servo posunuté, rám přizpůsobený),
     nový oddíl revize nahoře (předchozí oddíl sbalený jako historie), texty a verze aplikace +0.1,
  6. podklady revize do zdroj/revize/R<N>/ (úprava, protokoly, pohyb, dynamika, rozpis mezer po dílech, info.json);
     rozpis (kontrola/rozpis.py) hlásí i dotyky posunutých serv s vlastním rámem – jen varování, revize kvůli nim nespadne.
-Úchyty jsou zjednodušené desky (bočnice a příčka vidlice v rozměrech původní vidlice), ne díly k tisku."""
+Rám se posunu serva přizpůsobí plynulým přetvořením (kontrola/ram.py, v prohlížeči r14RamDeform), ne díl k tisku."""
 import sys, os, re, json, shutil, subprocess, tempfile, datetime, html as H
 TU = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.normpath(os.path.join(TU, '..', '..'))
 KD = os.path.join(ROOT, 'kontrola'); DATA = os.path.join(KD, 'data'); STRANKA = os.path.join(ROOT, 'web', 'app', 'emil-h22.html')
@@ -151,7 +151,7 @@ def main():
     s = sub1(s, r'<option value="r9" selected>R\d+ · pracovní sestava \(přelez 21 cm\)</option>', f'<option value="r9" selected>{rev} · pracovní sestava (přelez 21 cm)</option>')
     s = sub1(s, r'<option value="r9">Emil H22 R\d+</option>', f'<option value="r9">Emil H22 {rev}</option>')
     s = sub1(s, r'"R\d+ · Rovnováha vyšla ve všech[^"]*"', json.dumps(f'{rev} · Rovnováha vyšla ve všech {n} polohách, nejvyšší statické využití pohonu je {pct(ratios[k])}. '
-             f'Díly, které se schodu dotýkat nemají, od něj drží nejméně {cz(V["env"][emin], 1)} mm. Serva jsou posunutá podle úpravy {idp}, úchyty jsou dokreslené zjednodušeně. '
+             f'Díly, které se schodu dotýkat nemají, od něj drží nejméně {cz(V["env"][emin], 1)} mm. Serva jsou posunutá podle úpravy {idp}, rám se jim přizpůsobí zjednodušeně. '
              'Jde o simulaci, fyzický přelez potvrzený není.', ensure_ascii=False))
     s = sub1(s, r"'R\d+ · statický moment při nejvýhodnějším rozdělení sil mezi opory", f"'{rev} · statický moment při nejvýhodnějším rozdělení sil mezi opory")
     s = sub1(s, r"vk\('Dynamická simulace R\d+ · špička momentu serva'", f"vk('Dynamická simulace {rev} · špička momentu serva'")
@@ -180,7 +180,7 @@ def main():
     sec = f'''<section id="{pid}" class="rev-sec" data-revize="{rev}" aria-labelledby="{pid}Title">
 <div class="brand">{rev} · SIMULACE, FYZICKÝ PŘELEZ ZATÍM NEPOTVRZEN</div>
 <h2 id="{pid}Title">Posunutá serva podle úpravy {H.escape(idp)}</h2>
-<p class="r13-lead">{rev} vychází z {prev}. Serva níže jsou natrvalo posunutá, přelez je přizpůsobený nové geometrii a znovu prošel plnou kontrolou. Měděné desky v modelu jsou dokreslené úchyty (bočnice a příčka vidlice) – zjednodušené, rozměry podle původní vidlice, nejsou to díly k tisku.</p>
+<p class="r13-lead">{rev} vychází z {prev}. Serva níže jsou natrvalo posunutá, přelez je přizpůsobený nové geometrii a znovu prošel plnou kontrolou. Rám se v modelu sám přizpůsobí posunu serva: okolí pouzdra, páky a vidlice se posune spolu se servem a plynule přejde do zbytku rámu – zjednodušené přetvoření, ne díl k tisku.</p>
 <div class="r13-kpis"><div class="r13-kpi"><span>Nejvyšší využití serva</span><b>{pct(ratios[k])}</b><small>{prev}: {pct(max(rprev))} · statika, tření 0,50</small></div>
 <div class="r13-kpi"><span>Mezera mezi díly</span><b>{cz(V["self"][smin], 1)} mm</b><small>{prev}: {cz(min(stare["vychozi.json"]["self"]), 1)} mm · mez 9 mm</small></div>
 <div class="r13-kpi"><span>Odstup dílů od schodu</span><b>{cz(V["env"][emin], 1)} mm</b><small>{prev}: {cz(min(stare["vychozi.json"]["env"]), 1)} mm · mez 3 mm</small></div>
@@ -191,7 +191,7 @@ def main():
 <p>Posun je v základní poloze robota: x + k levému boku, y + dozadu, z + nahoru. Další úpravy v panelu Úprava kloubů se k těmto posunům přičítají.</p></details>
 <details><summary>Plná kontrola {rev}</summary><div class="r13-scroll"><table><thead><tr><th>Kontrola</th><th>{rev}</th></tr></thead><tbody>{rows_k}</tbody></table></div></details>
 <details><summary>Dynamická simulace ({prev} → {rev})</summary><div class="r13-scroll"><table><thead><tr><th>Varianta</th><th>{prev}</th><th>{rev}</th></tr></thead><tbody>{rows_d}</tbody></table></div></details>
-<details><summary>Co tato revize neověřuje</summary><ul><li>Úchyty jsou jen zjednodušené desky; pevnost, tvar pro tisk a střet serva s vlastním rámem se nekontrolují.</li>
+<details><summary>Co tato revize neověřuje</summary><ul><li>Rám je přizpůsobený jen plynulým přetvořením (kontrola/ram.py); pevnost a tvar pro tisk se nekontrolují, střety přetvořeného rámu hlásí rozpis po dílech.</li>
 <li>Pohyb je přizpůsobený nové geometrii a švih volných končetin doladěný; trup ani rozložení sil se znovu neoptimalizují.</li>
 <li>Rozpis mezer po dílech v dialogu Mezery dílů je z R13. Odstupy mají nejistotu asi ±2 mm.</li><li>Fyzicky nic neověřeno.</li></ul></details>
 <details class="r15-hist"><summary>Předchozí revize {prev}</summary>'''

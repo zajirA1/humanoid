@@ -12,6 +12,9 @@ let r14Dh=0,r14View=null;   // r14View = přehrávaná předchozí revize {rev,q
 // revize vzniklá z úpravy: zapečené posuny serv (r14D.zaklad) platí vždy; úpravy v panelu se k nim přičítají
 const r14Zaklad=r14D.zaklad||{},r14MaZaklad=Object.keys(r14Zaklad).length>0,r14Any=()=>r14Has()||r14MaZaklad;
 let r14EffCache=null,r14EffVer=-1;function r14Eff(edits){if(edits!==r14Edits)return r14Eng.mergeEdits(r14Zaklad,edits);if(r14EffVer!==r14Ver){r14EffCache=r14Eng.mergeEdits(r14Zaklad,r14Edits);r14EffVer=r14Ver}return r14EffCache}
+// rám se přizpůsobí posunu serva (r14RamPlan níže); desky vidlice se pak nekreslí
+// var: render se může zavolat dřív, než skript dojde sem (hodnoty pak ještě nejsou, viz kontroly níže)
+var r14RamAuto=true,r14Ram={R0:5,RMIN:25,K:1.6},r14Key0=r9RenderItems.map(o=>o.key),r14RamCache={},r14BoxCache={},r14RamT=0,r14RamSig='';
 const r14Mirror=j=>j>=2&&j<12?j+10:j>=12?j-10:j;
 const r14Zero=e=>!e||(!e.rot&&!e.carry&&Math.hypot(...e.d)<1e-6);
 // direction from the axis towards the bridge of the fork on the driven part (rest pose)
@@ -26,7 +29,33 @@ function r14Apply(on,edits=r14Edits){
  r9RenderItems.forEach((o,k)=>{let t=r14Items0[k].slice();const j=o.owner,e=on&&Number.isInteger(j)&&j<22&&!o.frame?ef[j]:null;
   if(e){if(e.rot&&o.link===par[j])t=mat(rot(axes[j],e.rot,r14P0[j]),t);const sh=o.link===j?sub(e.d,e.E):e.d;for(let a=0;a<3;a++)t[9+a]+=sh[a]}o.t=t});
  r14AppliedOn=on;r14AppliedVer=r14Ver;r14Active=on;
+ r14RamPlan(on?ef:{});
 }
+// ---------- rám se sám přizpůsobí posunu serva (stejný výpočet jako kontrola/ram.py) ----------
+// nosný rám (rodič kloubu) se v okolí pouzdra, páky a vidlice posune o d, hnaný rám v okolí páky a vidlice o d − E;
+// v obálce dílů + R0 celý, dál plynule k nule na R = max(25 mm, 1,6 × posun). Zjednodušené přetvoření, ne díl k tisku.
+const r14BaseKey=k=>['L_knee_ram','r8_L_knee_ram'].includes(k)?k+'_R5':k;
+function r14ItemBox(k){if(r14BoxCache[k])return r14BoxCache[k];const m=sourceMeshes[r14BaseKey(r14Key0[k])];if(!m)return null;const v=m[0],t=r14Items0[k],lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];
+ for(let i=0;i<v.length;i+=3){const p=pos(t,[v[i],v[i+1],v[i+2]]);for(let a=0;a<3;a++){if(p[a]<lo[a])lo[a]=p[a];if(p[a]>hi[a])hi[a]=p[a]}}return r14BoxCache[k]=[lo,hi]}
+function r14RamObl(ef){const out=[];for(const key in ef){const j=+key,e=ef[key];if(!(j>=0&&j<22))continue;const d=e.d||[0,0,0],E=e.E||[0,0,0];
+ for(const [link,D] of [[par[j],d],[j,sub(d,E)]]){if(norm(D)<.05)continue;const kde=link===par[j]?[par[j],j]:[j],lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];let any=false;
+  r9RenderItems.forEach((o,k)=>{if(o.owner!==j||!kde.includes(o.link)||o.frame)return;const b=r14ItemBox(k);if(!b)return;any=true;for(let a=0;a<3;a++){lo[a]=Math.min(lo[a],b[0][a]);hi[a]=Math.max(hi[a],b[1][a])}});
+  if(any)out.push({link,lo:lo.map(x=>x-r14Ram.R0),hi:hi.map(x=>x+r14Ram.R0),D:D.slice()})}}return out}
+function r14RamShift(p,link,obl){const s=[0,0,0];for(const b of obl){if(b.link!==link)continue;let g2=0;for(let a=0;a<3;a++){const g=Math.max(b.lo[a]-p[a],p[a]-b.hi[a],0);g2+=g*g}
+ const R=Math.max(r14Ram.RMIN,r14Ram.K*norm(b.D)),t=Math.min(1,Math.sqrt(g2)/R),w=1-t*t*(3-2*t);if(w>0)for(let a=0;a<3;a++)s[a]+=w*b.D[a]}return s}
+function r14Inv(t){const [a,b,c,d,e,f,g,h,i]=t,A=e*i-f*h,B=-(d*i-f*g),C=d*h-e*g,det=a*A+b*B+c*C,D=-(b*i-c*h),E=a*i-c*g,F=-(a*h-b*g),G=b*f-c*e,H=-(a*f-c*d),I=a*e-b*d;
+ const m=[A/det,D/det,G/det,B/det,E/det,H/det,C/det,F/det,I/det];return p=>{const x=p[0]-t[9],y=p[1]-t[10],z=p[2]-t[11];return [m[0]*x+m[3]*y+m[6]*z,m[1]*x+m[4]*y+m[7]*z,m[2]*x+m[5]*y+m[8]*z]}}
+function r14RamDeform(obl){r9RenderItems.forEach((o,k)=>{if(!o.frame)return;const L=obl.filter(b=>b.link===o.link);if(!L.length){o.key=r14Key0[k];return}
+ const sig=JSON.stringify(L);if(r14RamCache[k]&&r14RamCache[k].sig===sig){o.key=r14RamCache[k].name;return}
+ const base=r14BaseKey(r14Key0[k]),m=sourceMeshes[base];if(!m)return;const v=m[0],t=r14Items0[k],inv=r14Inv(t),nv=new Float32Array(v.length);let moved=false;
+ for(let i=0;i<v.length;i+=3){const p=pos(t,[v[i],v[i+1],v[i+2]]),s=r14RamShift(p,o.link,L);if(s[0]||s[1]||s[2]){moved=true;const q=inv([p[0]+s[0],p[1]+s[1],p[2]+s[2]]);nv[i]=q[0];nv[i+1]=q[1];nv[i+2]=q[2]}else{nv[i]=v[i];nv[i+1]=v[i+1];nv[i+2]=v[i+2]}}
+ if(!moved){o.key=r14Key0[k];r14RamCache[k]={sig,name:r14Key0[k]};return}
+ const name='r14ram'+k+'_'+base;rnd.add(name,nv,m[1]);sourceMeshes[name]=[nv,m[1]];r14RamCache[k]={sig,name};o.key=name})}
+// přetvoření rámu po krátké pauze (při tažení posuvníkem rám počká), export a kontrola ho vynutí hned
+function r14RamPlan(ef,hned){if(!r14Ram)return;const obl=r14RamObl(ef),sig=JSON.stringify(obl);if(sig===r14RamSig&&!hned)return;clearTimeout(r14RamT);
+ const run=()=>{r14RamSig=sig;r14RamDeform(obl);if(typeof render==='function')render()};if(hned||!obl.length)run();else r14RamT=setTimeout(run,180)}
+window.r14RamNow=()=>{if(r14Active)r14RamPlan(r14Eff(r14Edits),true)};
+window.r14RamInfo=()=>r9RenderItems.map((o,k)=>o.key!==r14Key0[k]?r14Key0[k]+' → '+o.key:null).filter(Boolean);
 function r14Sync(){const on=r9IsActive();if(on!==r14AppliedOn||r14Ver!==r14AppliedVer)r14Apply(on)}
 function r14Rec(pose){let r=r14Store.get(pose);if(!r){r={q0:pose.q.slice(),rt0:pose.rt.slice(),ver:0};r14Store.set(pose,r)}return r}
 function r14Climb(i){const pose=r9Motion.poses[i];if(!pose)return null;const rec=r14Rec(pose);if(rec.ver===r14Ver)return rec;rec.ver=r14Ver;const L=r9Loads.climb.loads,b=r14Loads0[i];
@@ -64,20 +93,21 @@ function r14DirHint(){const el=$('r14Dir');if(!el)return;const j=r14Sel,p=r14P0[
  const u=(r14Edits[j]&&r14Edits[j].d)?+r14Edits[j].d[0]:0,z=(r14Zaklad[j]&&r14Zaklad[j].d)?+r14Zaklad[j].d[0]:0;
  el.textContent='Do strany ('+(px>0?'levá':'pravá')+' strana robota): '+txt(u)+(Math.abs(z)>.05?' · s posunem zapečeným v revizi '+r14Rev+' celkem '+txt(u+z)+' oproti původní konstrukci':'')+'.'}
 // export 3MF: díly v neutrální poloze s posunem serva (d), visícími díly (E) a natočením pouzdra – stejně jako v modelu
-window.r14CadPrep=()=>{if(!r14Ready||!r14Active)return null;const ef=r14Eff(r14Edits),W=r14Eng.fk(Array(22).fill(0),[1,0,0,0,1,0,0,0,1,0,0,0]);
- return (k,tm,ow,link)=>{let t=tm.slice();const o=r9RenderItems[k],e=Number.isInteger(ow)&&ow<22&&!(o&&o.frame)?ef[ow]:null;
+window.r14CadPrep=()=>{if(!r14Ready||!r14Active)return null;window.r14RamNow();const ef=r14Eff(r14Edits),W=r14Eng.fk(Array(22).fill(0),[1,0,0,0,1,0,0,0,1,0,0,0]);
+ const fn=(k,tm,ow,link)=>{let t=tm.slice();const o=r9RenderItems[k],e=Number.isInteger(ow)&&ow<22&&!(o&&o.frame)?ef[ow]:null;
   if(e){if(e.rot&&link===par[ow])t=mat(rot(axes[ow],e.rot,r14P0[ow]),t);const sh=link===ow?sub(e.d,e.E):e.d;for(let a=0;a<3;a++)t[9+a]+=sh[a]}
-  const F=W[link];return F?mat(F,t):t}};
-// ---------- dokreslené úchyty: bočnice a příčka vidlice k posunutému servu (zjednodušené, ne díl k tisku) ----------
+  const F=W[link];return F?mat(F,t):t};
+ fn.mesh=(k,n)=>{const o=r9RenderItems[k];return o&&o.frame&&o.key!==r14Key0[k]?o.key:n};return fn};
+// ---------- dokreslené úchyty (desky vidlice) – jen když se rám nepřizpůsobuje (r14RamAuto=false) ----------
 const r14ForkColor=hex('#c97b3d');
-function r14Cmd(cmd,w){if(!r14Ready||!r14Active||document.body.classList.contains('kondo-active'))return;const EF=r14Eff(r14Edits);
+function r14Cmd(cmd,w){if(r14RamAuto!==false||!r14Ready||!r14Active||document.body.classList.contains('kondo-active'))return;const EF=r14Eff(r14Edits);
  for(const k in EF){const j=+k,e=EF[k],f=r14D.forks[j];if(!f||Math.hypot(...e.d)<.05)continue;const a=axes[j],h=f.span/2,u=r14ForkDir[j],po=r14P0[j],pn=plus(po,e.d),b0=plus(po,mul(u,f.L)),Wj=w[j];
   const plate=(A,B,n,W,Tk)=>{const L=sub(B,A),len=norm(L);if(len<.5)return;const ux=mul(L,1/len),v=unit(cross(n,ux)),c=mul(plus(A,B),.5);cmd.push(form('box',mat(Wj,[...mul(ux,len),...mul(v,W),...mul(n,Tk),...c]),r14ForkColor))};
   for(const s of [-1,1])plate(plus(sub(pn,e.E),mul(a,s*h)),plus(b0,mul(a,s*h)),a,f.w,Math.max(1.5,f.t));
   plate(plus(b0,mul(a,-h)),plus(b0,mul(a,h)),u,f.w,Math.max(1.5,f.t))}}
 // úchyty pro export 3MF: stejné desky v neutrální poloze (q = 0), transformace = sloupce os × rozměr + střed
 window.r14CadBox=[[-.5,-.5,-.5,.5,-.5,-.5,.5,.5,-.5,-.5,.5,-.5,-.5,-.5,.5,.5,-.5,.5,.5,.5,.5,-.5,.5,.5],[0,2,1,0,3,2,4,5,6,4,6,7,0,1,5,0,5,4,1,2,6,1,6,5,2,3,7,2,7,6,3,0,4,3,4,7]];
-window.r14CadItems=()=>{if(!r14Ready||!r9IsActive())return [];const EF=r14Eff(r14Edits),out=[];if(!Object.keys(EF).length)return out;
+window.r14CadItems=()=>{if(r14RamAuto!==false||!r14Ready||!r9IsActive())return [];const EF=r14Eff(r14Edits),out=[];if(!Object.keys(EF).length)return out;
  const W=r14Eng.fk(Array(22).fill(0),[1,0,0,0,1,0,0,0,1,0,0,0]);
  for(const k in EF){const j=+k,e=EF[k],f=r14D.forks[j];if(!f||Math.hypot(...e.d)<.05)continue;const a=axes[j],h=f.span/2,u=r14ForkDir[j],po=r14P0[j],pn=plus(po,e.d),b0=plus(po,mul(u,f.L)),F=W[j];
   const plate=(A,B,n,Wd,Tk)=>{const L=sub(B,A),len=norm(L);if(len<.5)return;const ux=mul(L,1/len),v=unit(cross(n,ux)),c=mul(plus(A,B),.5);
@@ -135,7 +165,7 @@ function r14Controls(){r14Sync();const j=r14Sel,e=r14Edits[j]||{d:[0,0,0],carry:
  lines.push(['Hmotnost posouvaného pohonu',fmt(1000*r14D.servoKg[j],0)+' g']);
  $('r14Facts').innerHTML=lines.map(([k,v])=>'<div><span>'+k+'</span><b>'+v+'</b></div>').join('');
  const n=Object.keys(r14Edits).length;$('r14State').textContent=!r9IsActive()?'Úpravy fungují jen v pracovní sestavě Emil '+r14Rev+'.':n?('Upraveno kloubů: '+n+'. '+(r14Result?'Souhrn níže odpovídá této úpravě.':'Aktuální poloha se přepočítává hned, souhrn celého pohybu až po stisku Přepočítat.')):'Bez úprav. Vyber kloub v seznamu nebo kliknutím na kolečko v modelu a posuň ho.';
- if(r14MaZaklad&&r9IsActive())$('r14State').textContent+=' Revize '+r14Rev+' má zapečené posuny '+Object.keys(r14Zaklad).length+' kloubů (měděné kolečko, dokreslené úchyty); úprava v panelu se k nim přičítá.';
+ if(r14MaZaklad&&r9IsActive())$('r14State').textContent+=' Revize '+r14Rev+' má zapečené posuny '+Object.keys(r14Zaklad).length+' kloubů (měděné kolečko; rám se posunu sám přizpůsobí); úprava v panelu se k nim přičítá.';
  r14ShowResult()}
 // ---------- full run ----------
 const r14Tick=()=>new Promise(r=>setTimeout(r,0));
