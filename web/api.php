@@ -77,7 +77,28 @@ if ($akce === 'seznam') {
         }
         $out[] = $polozka;
     }
-    odpoved(200, ['prepocty' => $out]);
+    // přepočty spuštěné mimo aplikaci (ručně v GitHubu, Claude/GPT) nejsou v evidenci serveru – doplnit z větve prepocty
+    $zname = array_column(evidence_nacti($evidence), 'id');
+    [$k3, $v3] = gh('GET', '/contents/prepocty?ref=prepocty', $token);
+    $cizi = [];
+    if ($k3 === 200) {
+        foreach ((json_decode($v3, true) ?: []) as $f) {
+            $n = (string) ($f['name'] ?? '');
+            if (($f['type'] ?? '') === 'dir' && preg_match('/^(\d{8})-(\d{6})-[0-9a-f]{6}$/', $n) && !in_array($n, $zname, true)) { $cizi[] = $n; }
+        }
+    }
+    rsort($cizi);
+    foreach (array_slice($cizi, 0, 6) as $id) {
+        [$ka, $va] = gh('GET', '/contents/prepocty/' . rawurlencode($id) . '/vysledek.json?ref=prepocty', $token, null, 'application/vnd.github.raw+json');
+        [$kb, $vb] = gh('GET', '/contents/prepocty/' . rawurlencode($id) . '/uprava.json?ref=prepocty', $token, null, 'application/vnd.github.raw+json');
+        $vys = $ka === 200 ? json_decode($va, true) : null; $upr = $kb === 200 ? json_decode($vb, true) : null;
+        if (!is_array($vys)) { continue; }
+        $cas = DateTime::createFromFormat('Ymd-His', substr($id, 0, 15), new DateTimeZone('UTC'));
+        $out[] = ['id' => $id, 'cas' => $cas ? $cas->getTimestamp() : 0, 'upravy' => is_array($upr) ? ($upr['upravy'] ?? []) : [], 'rychle' => !empty($vys['rychla']),
+            'stav' => 'completed', 'zaver' => !empty($vys['proslo']) ? 'success' : 'failure', 'odkaz' => null, 'vysledek' => $vys, 'mimo_aplikaci' => true];
+    }
+    usort($out, fn($a, $b) => $b['cas'] <=> $a['cas']);
+    odpoved(200, ['prepocty' => array_slice($out, 0, 20)]);
 }
 // ---------- vydání: nová revize a nasazení přímo z aplikace (jen majitel po přihlášení) ----------
 function gh_behy(string $wf, string $token, int $n = 10): array {
