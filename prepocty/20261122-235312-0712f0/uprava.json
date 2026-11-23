@@ -1,0 +1,25 @@
+{
+ "model": "Emil H22 R15",
+ "upravy": {
+  "8": {
+   "kloub": "Rameno · předozadní pohyb · L",
+   "posun_mm": [
+    -26.5,
+    0.0,
+    0.0
+   ],
+   "nese_dalsi_dily": true,
+   "natoceni_serva_deg": 0.0
+  },
+  "18": {
+   "kloub": "Rameno · předozadní pohyb · P",
+   "posun_mm": [
+    26.5,
+    0.0,
+    0.0
+   ],
+   "nese_dalsi_dily": true,
+   "natoceni_serva_deg": 0.0
+  }
+ }
+}
