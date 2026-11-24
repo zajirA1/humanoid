@@ -1,0 +1,37 @@
+name: Ruční předání vydání R16 na Hetzner
+on:
+  push:
+    branches: [vydani/aplikace-09]
+permissions:
+  contents: read
+  actions: write
+jobs:
+  predani:
+    name: Ruční povel – ${{ matrix.rezim }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rezim: [zkouska, nasazeni]
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REZIM: ${{ matrix.rezim }}
+      REPO: ${{ github.repository }}
+      VYDANI: 7b1d948348e749a66e359e7e187e41f68c53402c
+    steps:
+      - name: Pouhý push nic nespouští
+        run: echo "Pro příslušný režim je nutné ruční spuštění této konkrétní úlohy."
+      - name: Předat ruční povel standardnímu workflow Nasazení na Hetzner
+        if: github.run_attempt > 1
+        run: |
+          set -euo pipefail
+          test "$REPO" = zajirA1/humanoid
+          test "$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)" = "$VYDANI"
+          RUNS=$(gh api --method GET "repos/$REPO/actions/workflows/nasazeni.yml/runs" -f head_sha="$VYDANI" -f event=workflow_dispatch -f per_page=100)
+          if jq -e --arg title "Nasazení · $REZIM" 'any(.workflow_runs[]; .display_title==$title and (.status!="completed" or .conclusion=="success"))' <<< "$RUNS" >/dev/null; then
+            echo "Tento režim pro přesný commit už běží nebo proběhl."; exit 0
+          fi
+          if [ "$REZIM" = nasazeni ]; then
+            jq -e 'any(.workflow_runs[]; .display_title=="Nasazení · zkouska" and .conclusion=="success")' <<< "$RUNS" >/dev/null
+          fi
+          gh workflow run nasazeni.yml --repo "$REPO" --ref main -f rezim="$REZIM"
