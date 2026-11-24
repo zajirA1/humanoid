@@ -1,5 +1,6 @@
 const raw=Uint8Array.from(atob($('model').textContent.trim()),c=>c.charCodeAt(0)),dview=new DataView(raw.buffer),jl=dview.getUint32(12,true);
 const doc=JSON.parse(new TextDecoder().decode(raw.subarray(20,20+jl))),binStart=28+jl,ns=doc.nodes;
+configureHardware(doc.extras);
 function acc(k){const a=doc.accessors[k],v=doc.bufferViews[a.bufferView],n={VEC3:3,VEC4:4,SCALAR:1}[a.type];return new Float32Array(raw.buffer,binStart+(v.byteOffset||0)+(a.byteOffset||0),a.count*n);}
 const mm=(a,b)=>{let c=new Float32Array(16);for(let j=0;j<4;j++)for(let i=0;i<4;i++)for(let k=0;k<4;k++)c[j*4+i]+=a[k*4+i]*b[j*4+k];return c;};
 function matrix(p,r,s){const [x,y,z,w]=r||[0,0,0,1],[a,b,c]=s||[1,1,1];

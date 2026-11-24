@@ -69,13 +69,19 @@ if (($_GET['data'] ?? '') === 'tisk-r16') {
 if (($_GET['data'] ?? '') === 'tisk-emil') {
     if (empty($_SESSION['ok'])) { http_response_code(403); exit; }
     $nazev = $_GET['file'] ?? '';
-    $dovolene = ['miska.stl', 'koule.stl', 'sablona.stl', 'miska.3mf', 'koule.3mf', 'sablona.3mf'];
+    $dily = ['miska', 'koule', 'sablona', 'talir', 'stojan', 'pojistka-tabletu', 'prichytka-ramene', 'stereo-lista'];
+    $dovolene = ['stereo-kalibrace.zip'];
+    foreach ($dily as $dil) {
+        $dovolene[] = $dil . '.stl';
+        $dovolene[] = $dil . '.3mf';
+    }
     if (!in_array($nazev, $dovolene, true)) {
         http_response_code(404); exit;
     }
     $cesta = __DIR__ . '/app/tisk/emil/' . $nazev;
     if (!is_file($cesta)) { http_response_code(404); exit; }
-    header('Content-Type: ' . (str_ends_with($nazev, '.3mf') ? 'model/3mf' : 'model/stl'));
+    $typy = ['stl' => 'model/stl', '3mf' => 'model/3mf', 'zip' => 'application/zip'];
+    header('Content-Type: ' . $typy[pathinfo($nazev, PATHINFO_EXTENSION)]);
     header('Content-Disposition: attachment; filename="' . $nazev . '"');
     header('Content-Length: ' . filesize($cesta));
     header('Cache-Control: private, no-cache');

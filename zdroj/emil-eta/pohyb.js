@@ -61,7 +61,7 @@ const sweep = [
     pose(10,'Zavřít',[143,91,-55,12]),pose(12,'Pravý bok',[85,91,-55,40]),pose(15,'Výchozí poloha',park)
 ];
 const recipe = {
-    format:'emil-eta-motion/2',model:'ETA 5229 / Waveshare Robot Arm for Pi / V2',
+    format:'emil-eta-motion/2',model:'ETA 5229 / Waveshare Robot Arm for Pi / V3',
     coordinates:'mm, X dopředu, Y vzhůru, Z doprava; oba sklony od horizontály',
     limits_simulation:Object.fromEntries(names.map((k,i)=>[k,lim[i]]))
 };
@@ -106,29 +106,85 @@ function carried(fs,t,q) {
     const state=held?'V chapadle':inBowl && pos[1]<=137?'V misce':dropped?'Uvolněný':'Na podlaze';
     return {pos,held,issue,state};
 }
+let hardware;
+function configureHardware(extras) {
+    if (!extras.lidar || !Array.isArray(extras.static_obstacles)) throw Error('Chybí geometrie nástavby V3.');
+    hardware=extras;
+}
+function movingEnvelopes(q,held) {
+    const {elbow,wrist,tip}=arm(q), yaw=q[0]*rg;
+    const dx=Math.cos(yaw), dz=Math.sin(yaw);
+    const local=(p,x,y,z)=>[p[0]+dx*x-dz*z,p[1]+y,p[2]+dz*x+dx*z];
+    const parts=[];
+    const link=(a,b,r)=>parts.push({a,b,r});
+    for (const side of [-1,1]) {
+        // Obě rovnoběžná táhla mají příčnou rozteč i výškový odstup jako v GLB.
+        link(local(base,0,0,side*16),local(elbow,0,0,side*16),4.2);
+        link(local(base,-13,6,side*12.2),local(elbow,-13,6,side*12.2),2.7);
+        link(local(elbow,-13,6,side*13),local(elbow,0,10,side*13),4.2);
+        link(local(elbow,0,0,side*10.2),local(wrist,0,0,side*10.2),3.6);
+        link(local(elbow,0,10,side*7.9),local(wrist,0,10,side*7.9),2.7);
+        link(local(wrist,0,0,side*9.6),local(wrist,0,10,side*9.6),4.2);
+        link(local(wrist,0,5,side*11),local(wrist,20,5,side*11),3);
+        const jaw=side*(q[3]/2+2);
+        link(local(wrist,9,0,jaw),local(tip,2,0,jaw),3.1);
+    }
+    // Servo je nad vodorovným chapadlem. Jeho obálka se otáčí s celou základnou.
+    link(local(wrist,-4,16,0),local(wrist,18,16,0),11.5);
+    if (held) link(tip,tip,16);
+    return parts;
+}
 function check(q,held) {
-    const {elbow,wrist,tip}=arm(q), hits=new Set(), yaw=q[0]*rg;
+    const hits=new Set();
     function probe([x,y,z],r) {
         if (y-r<-.2) hits.add('podlaha');
         if (Math.hypot(x,z)<175+r && y-r<83 && y+r>7) hits.add('podvozek');
-        if (Math.hypot(x,z)<165+r && y-r<115 && y+r>110) hits.add('nosný talíř');
-        if (Math.hypot(x,z)<22+r && y+r>116 && y-r<243) hits.add('sloupek');
-        const dx=x-15,dy=y-325,co=Math.cos(27*rg),si=Math.sin(27*rg);
-        if (Math.abs(dx*co+dy*si)<5+r && Math.abs(-dx*si+dy*co)<89+r && Math.abs(z)<141+r) hits.add('tablet');
-        if (Math.abs(x)<48+r && Math.abs(z)<15+r && Math.abs(y-247)<5+r) hits.add('konzola');
+        if (Math.hypot(x,z)<164+r && y-r<115 && y+r>108) hits.add('nosný talíř');
+        if (Math.hypot(x,z)<39+r && y-r<108 && y+r>98) hits.add('lepená patka');
+        for (const obstacle of hardware.static_obstacles) {
+            const [lo,hi]=obstacle.bounds_mm;
+            if (x>lo[0]-r && x<hi[0]+r && y>lo[1]-r && y<hi[1]+r && z>lo[2]-r && z<hi[2]+r) hits.add(obstacle.label);
+        }
         if (Math.abs(x-91)<40+r && z>-54.6-r && z<95+r && y-r<125 && y+r>115) hits.add('základna Waveshare');
         if (Math.abs(x)<49+r && Math.abs(z-97)<46+r && y-r<121-.15 && y+r>115) hits.add('dno misky');
         if (y-r<133 && y+r>121 && ((Math.abs(Math.abs(x)-47.5)<1.5+r && Math.abs(z-97)<46+r) ||
             (Math.abs(Math.abs(z-97)-44.5)<1.5+r && Math.abs(x)<49+r))) hits.add('okraj misky');
     }
-    function segment(a,b,r) {
-        for(let i=0;i<=24;i++) probe(add(a,mul(sub(b,a),i/24)),r);
+    for (const {a,b,r} of movingEnvelopes(q,held)) {
+        const delta=sub(b,a), count=Math.max(1,Math.ceil(Math.hypot(...delta)/4));
+        for (let i=0;i<=count;i++) probe(add(a,mul(delta,i/count)),r);
     }
-    segment(base,elbow,9); segment(elbow,wrist,8); probe(wrist,10);
-    for (const sign of [-1,1]) {
-        const offset=mul([-Math.sin(yaw),0,Math.cos(yaw)],sign*(q[3]/2+2));
-        segment(add(wrist,offset),add(tip,offset),2);
-    }
-    if (held) probe(tip,16);
     return [...hits];
+}
+
+// Úhlová obálka pohyblivé části v celé výšce optického okénka.
+// Nula = příď, 90° = pravý bok. Původní podpěry víčka zde nejsou přičteny.
+function lidarShadows(q,held) {
+    const arcs=[], [low,high]=hardware.lidar.window_y_mm;
+    for (const {a,b,r} of movingEnvelopes(q,held)) {
+        if (Math.max(a[1],b[1])+r<low || Math.min(a[1],b[1])-r>high) continue;
+        const d=sub(b,a);
+        let t0=0,t1=1;
+        if (Math.abs(d[1])>1e-8) {
+            const l=(low-r-a[1])/d[1],h=(high+r-a[1])/d[1];
+            t0=clamp(Math.min(l,h),0,1);t1=clamp(Math.max(l,h),0,1);
+        }
+        const p=add(a,mul(d,t0)),e=add(a,mul(d,t1));
+        const angle=t=>Math.atan2(t[2],t[0])/rg;
+        const half=t=>Math.asin(clamp(r/Math.hypot(t[0],t[2]),0,1))/rg;
+        const centre=angle(p), other=centre+((angle(e)-centre+540)%360-180);
+        let start=Math.min(centre-half(p),other-half(e));
+        let end=Math.max(centre+half(p),other+half(e));
+        const offset=360*Math.floor(start/360);
+        start-=offset;end-=offset;
+        if (end>360) arcs.push([0,end-360],[start,360]);
+        else arcs.push([start,end]);
+    }
+    const result=[];
+    for (const interval of arcs.sort((a,b)=>a[0]-b[0])) {
+        const last=result.at(-1);
+        if (last && interval[0]<=last[1]) last[1]=Math.max(last[1],interval[1]);
+        else result.push(interval);
+    }
+    return result;
 }

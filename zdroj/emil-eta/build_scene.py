@@ -1,7 +1,6 @@
-"""Generate the Emil V2 glTF scene from the original V1 ZIP or a V1/V2 GLB.
+"""Sestaví Emil V3 z modelu V2 (nebo původního archivu V1) a výrobních STL.
 
-Usage: python build_scene.py Emil-3D-simulator-V1.zip [output.glb]
-       python build_scene.py Emil-V2.glb my-revision.glb
+Usage: python build_scene.py Emil-V2.glb Emil-V3.glb
 Design coordinates are millimetres, Y up. glTF translations and meshes are metres.
 """
 import argparse
@@ -11,6 +10,10 @@ import math
 import struct
 import zipfile
 from pathlib import Path
+
+SRC = Path(__file__).resolve().parent
+TISK = SRC.parents[1] / 'web' / 'app' / 'tisk' / 'emil'
+TABLET_CENTER = (-56, 192 + 181.85 / 2, 0)
 
 
 def mm(values):
@@ -37,13 +40,14 @@ def read_reference(path):
 class Scene:
     def __init__(self):
         self.doc = {
-            "asset": {"version": "2.0", "generator": "Emil V2 • WAV083"},
-            "scene": 0, "scenes": [{"name": "Emil V2", "nodes": [0]}],
+            "asset": {"version": "2.0", "generator": "Emil V3 • ETA 5229, Waveshare WAV083, Yahboom"},
+            "scene": 0, "scenes": [{"name": "Emil V3", "nodes": [0]}],
             "nodes": [], "meshes": [], "materials": [], "buffers": [],
             "bufferViews": [], "accessors": [],
         }
         self.blob = bytearray()
         self.shapes = {}
+        self.obstacles = []
 
     def append(self, array, item):
         items = self.doc[array]
@@ -60,15 +64,15 @@ class Scene:
         return index
 
     def import_emil(self, source, binary):
-        # Keep the base, tablet, overhead camera, bowl and test object. Copy only
-        # reachable dependencies, excluding the old arm and its motion program.
+        # Zůstává podvozek, obličej tabletu, přepravní miska a zkušební koule.
+        # Původní příruba, červený talíř, sloupek a kamera nad tabletem se vyřadí.
         if source["nodes"][73]["name"] == "WS_Payload":
             payload = 73
         elif source["nodes"][73]["name"] == "Patka manipulátoru" and "ponožky" in source["nodes"][99]["name"]:
             payload = 99
         else:
             raise ValueError("The reference must contain the original V1/V2 Emil body")
-        retained = [*range(73), payload]
+        retained = [*range(23), 39, 40, *range(42, 64), *range(68, 73), payload]
         nodes = {old: new for new, old in enumerate(retained)}
         meshes, materials, views, accessors = {}, {}, {}, {}
 
@@ -89,6 +93,12 @@ class Scene:
 
         for old in retained:
             node = copy.deepcopy(source["nodes"][old])
+            if old == 42:
+                node["name"] = "Redmi Pad Pro • svisle"
+                node["translation"] = mm(TABLET_CENTER)
+                node.pop("rotation", None)
+                # Výchozí V1 měl zjednodušené tělo 9 × 177 × 282 mm.
+                node["scale"] = [7.52 / 9, 181.85 / 177, 280 / 282]
             if node.get("children"):
                 node["children"] = [nodes[i] for i in node["children"] if i in nodes]
             if old == payload:
@@ -185,6 +195,53 @@ class Scene:
                 angle = math.radians(start + 180*k/8)
                 outline.append((cx + width/2*math.cos(angle), width/2*math.sin(angle)))
         return self.polygon(parent, name, outline, thick, material, xyz, rotation)
+
+    def stl(self, filename, name, material, transform):
+        """Importuje stejný výrobní povrch jako soubor ke stažení. Matice je v mm."""
+        mesh_file = TISK / filename
+        raw = mesh_file.read_bytes()
+        count = struct.unpack_from("<I", raw, 80)[0]
+        if len(raw) == 84 + 50 * count:
+            triangles = [[p[3:6], p[6:9], p[9:12]]
+                         for p in struct.iter_unpack("<12fH", raw[84:])]
+        else:
+            vertices = [tuple(map(float, line.split()[1:])) for line in raw.decode("ascii").splitlines()
+                        if line.lstrip().startswith("vertex ")]
+            if not vertices or len(vertices) % 3:
+                raise ValueError(f"Neplatné STL: {filename}")
+            triangles = [vertices[i:i+3] for i in range(0, len(vertices), 3)]
+
+        points, normals = bytearray(), bytearray()
+        minimum, maximum = [math.inf] * 3, [-math.inf] * 3
+        for tri in triangles:
+            world = [tuple(sum(a*b for a,b in zip(row[:3], p)) + row[3] for row in transform)
+                     for p in tri]
+            u = [b-a for a,b in zip(world[0], world[1])]
+            v = [b-a for a,b in zip(world[0], world[2])]
+            normal = (u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0])
+            length = math.hypot(*normal)
+            if length <= 1e-8:
+                continue
+            normals.extend(struct.pack("<3f", *(component/length for component in normal))*3)
+            for vertex in world:
+                points.extend(struct.pack("<3f", *mm(vertex)))
+                for dim, pos in enumerate(vertex):
+                    minimum[dim] = min(minimum[dim], pos)
+                    maximum[dim] = max(maximum[dim], pos)
+        if not points:
+            raise ValueError(f"Prázdné STL: {filename}")
+        size = len(points)//12
+        # Použij skutečné meze uložených 32bitových souřadnic pro glTF.
+        stored = list(zip(*struct.iter_unpack("<3f", points)))
+        positions = self.append("accessors", {"bufferView": self.view(points), "componentType": 5126,
+            "count": size, "type": "VEC3", "min": list(map(min,stored)), "max": list(map(max,stored))})
+        directions = self.append("accessors", {"bufferView": self.view(normals), "componentType": 5126,
+            "count": size, "type": "VEC3"})
+        geom = self.append("meshes", {"name":name, "primitives":[{"material":material,
+            "attributes":{"POSITION":positions,"NORMAL":directions}}]})
+        node = self.node(1, name, mesh=geom)
+        self.doc["nodes"][node]["extras"] = {"stl": filename, "print_to_world_mm": transform}
+        return [[round(v,3) for v in minimum], [round(v,3) for v in maximum]]
 
     def write(self, file):
         self.doc["buffers"] = [{"byteLength": len(self.blob)}]
@@ -310,14 +367,122 @@ def make_arm(s):
     }
 
 
+def make_optics(s):
+    """Pouzdra a optické středy senzorů v robotovém rámci. Všechny délky jsou mm."""
+    graphite = s.material("Pouzdro kamery", (39, 45, 48), .06)
+    grey = s.material("Zadní kryt a závěs", (73, 83, 89), .12)
+    black = s.material("Černý kroužek objektivu", (24, 31, 36))
+    glass = s.material("Optické sklo", (61, 122, 139), .36, .23)
+    lens_normal = quaternion((0, 1, 0), 90)  # původní osa válce je Z, optická osa je X
+    for name, sign, y, z, diameter in (
+        ("Tablet_front_optical", 1, TABLET_CENTER[1]+85.4, 0, 3.1),
+        ("Tablet_rear_optical", -1, TABLET_CENTER[1]+69, 122, 13)
+    ):
+        surface = TABLET_CENTER[0] + sign * 7.52 / 2
+        protrusion = .85 if sign > 0 else 1.6
+        s.disc(1, "Vestavěná přední kamera" if sign>0 else "Vestavěná zadní kamera",
+               diameter, protrusion, black, (surface+sign*protrusion/2, y, z), lens_normal, 24)
+        optical = (surface+sign*(protrusion+.15), y, z)
+        s.disc(1, "Sklo tabletu", diameter*.58, .3, glass, optical, lens_normal, 20)
+        node = s.node(1, name, optical)
+        s.doc["nodes"][node]["extras"] = {"forward":[sign,0,0],"estimated_lens_position":True}
+    inclination = 20
+    angle = math.radians(inclination)
+    forward = (math.cos(angle),-math.sin(angle),0)
+    up = (math.sin(angle),math.cos(angle),0)
+    centres = []
+    for suffix, lateral in (("L",-55), ("R",55)):
+        origin=(-51,411,lateral)
+        frame = s.node(1, "Yahboom USB • "+suffix, origin, quaternion((0,0,1),-inclination))
+        # Silueta kamery v místním Z−Y. Zaoblené boky a prostřední předsazený objektiv.
+        outline=[]
+        for cx, start in ((32,-90),(-32,90)):
+            for i in range(13):
+                a=math.radians(start+i*180/12)
+                outline.append((cx+14.5*math.cos(a),14.5*math.sin(a)))
+        s.polygon(frame,"Tělo kamery USB",outline,22,graphite,(11,14.5,0),lens_normal)
+        s.disc(frame,"Prstenec objektivu",16,4.0,black,(24,14.5,0),lens_normal,24)
+        s.disc(frame,"Čočka Yahboom",9.5,.3,glass,(25.85,14.5,0),lens_normal,28)
+        s.disc(frame,"Mikrofon",2.0,.3,black,(22.1,14.5,-14),lens_normal,12)
+        s.box(frame,"Sklopený původní klip • odhad", (9,5.4,25), grey,(7,-2.2,0))
+        for z in (-31,31):
+            s.box(frame,"Pásek zadního sedla", (23.4,1.3,3),black,(11,29.35,z))
+            s.box(frame,"Pásek čela kamery",(1.25,30,3),black,(22.55,14.5,z))
+        centre=tuple(origin[i]+26*forward[i]+14.5*up[i] for i in range(3))
+        centres.append([round(x,5) for x in centre])
+        node=s.node(1,"Stereo_"+suffix+"_optical",centre)
+        s.doc["nodes"][node]["extras"]={"forward":forward,"up":up,"estimated_lens_position":True}
+        corners=[[origin[i]+d*forward[i]+h*up[i]+(z if i==2 else 0) for i in range(3)]
+                 for d in (0,26) for h in (-5,29) for z in (-46.5,46.5)]
+        axes=list(zip(*corners))
+        s.obstacles.append({"label":"kamera Yahboom","bounds_mm":[list(map(min,axes)),list(map(max,axes))]})
+    s.doc["extras"]["stereo"] = {"left_mm":centres[0],"right_mm":centres[1],
+        "forward":forward,"up":up,"baseline_mm":110,"pitch_down_deg":inclination}
+    s.doc["extras"]["tablet"]={"size_mm":[7.52,181.85,280],"center_mm":TABLET_CENTER,
+        "front":[1,0,0],"rear":[-1,0,0],"source":"https://www.mi.com/global/product/redmi-pad-pro/specs/"}
+    half=[7.52/2+2,181.85/2,140]
+    s.obstacles.append({"label":"tablet","bounds_mm":[[v-r for v,r in zip(TABLET_CENTER,half)],
+                                                     [v+r for v,r in zip(TABLET_CENTER,half)]]})
+
+
+def make_lidar(s):
+    steel=s.material("Původní podpěry víčka • poloha odhad", (95,101,109),.23)
+    original=[]
+    # Počet doložen majitelem. Poloha, rozteč i průměr jsou ilustrační.
+    for degrees in (0,120,240):
+        a=math.radians(degrees)
+        x,z=44*math.cos(a),44*math.sin(a)
+        s.disc(0,"Původní sloupek víčka • schematicky",3,7.6,steel,
+               (x,91,z),quaternion((1,0,0),-90),12)
+        original.append({"x":round(x,4),"z":round(z,4),"radius":1.5})
+    s.disc(1,"Lepená plocha • návrhová vrstva",66,.5,s.material("Lepidlo",(204,174,125)),
+           (0,98.25,0),quaternion((1,0,0),-90),60)
+    s.doc["extras"]["lidar"]={"origin_mm":[0,91,0],"window_radius_mm":42,"window_y_mm":[87.5,94.5],
+        "cap_top_mm":98,"adhesive_y_mm":[98,98.5],"deck_bottom_mm":108,
+        "stock_posts_mm":original,"stock_posts_layout_estimated":True}
+
+
+def make_mounts(s):
+    deck=s.material("PETG • nosná deska", (175,62,52),0,.61)
+    mast=s.material("PETG • držák tabletu", (191,202,198),0,.66)
+    rail=s.material("PETG • stereolišta a příchytky",(82,104,111),0,.68)
+    s.stl("talir.stl","Nosný talíř PETG",deck,((1,0,0,0),(0,0,-1,115),(0,1,0,0)))
+    for file,label,material,matrix in [
+        ("stojan.stl","Stojan tabletu",mast,((0,0,1,-86),(0,1,0,115),(-1,0,0,0))),
+        ("pojistka-tabletu.stl","Horní pojistka tabletu",mast,((0,0,1,-70),(0,1,0,361),(-1,0,0,0))),
+        ("stereo-lista.stl","Společná stereolišta",rail,((0,0,1,-61),(0,1,0,402),(-1,0,0,0)))
+    ]:
+        bounds=s.stl(file,label,material,matrix)
+        s.obstacles.append({"label":label,"bounds_mm":bounds})
+    for x,z,sign in ((44,-37,1),(44,33,1),(138,-37,-1),(138,69,-1)):
+        bounds=s.stl("prichytka-ramene.stl","Příchytka tovární základny",rail,
+                     ((sign,0,0,x),(0,0,-1,129.4),(0,sign,0,z)))
+        s.obstacles.append({"label":"příchytka základny","bounds_mm":bounds})
+    steel=s.material("Spojovací materiál M4",(174,183,187),.58,.35)
+    vertical=quaternion((1,0,0),-90)
+    for x,z in ((73,-58.6),(77,99)):
+        s.disc(1,"Koncový doraz základny Ø8",8,10,steel,(x,120,z),vertical,18)
+        s.obstacles.append({"label":"doraz základny","bounds_mm":[[x-4,115,z-4],[x+4,125,z+4]]})
+    for x,z in ((44,-37),(44,33),(138,-37),(138,69),(-79,-32),(-79,32),(-48,-32),(-48,32)):
+        y=129.4 if x>0 else 123
+        s.disc(1,"Podložka M4",9,.8,steel,(x,y+.4,z),vertical,16)
+        s.disc(1,"Hlava M4",7,3,steel,(x,y+2.3,z),vertical,12)
+    for y,z,x in ((367,-32,-86),(367,32,-86),(402,-13,-86),(402,13,-86)):
+        s.disc(1,"Zadní hlava šroubu příčníku",7,3,steel,(x-1.5,y,z),quaternion((0,1,0),90),12)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("reference", type=Path)
-    parser.add_argument("output", type=Path, nargs="?", default=Path(__file__).with_name("Emil-V2.glb"))
+    parser.add_argument("output", type=Path, nargs="?", default=SRC / "Emil-V3.glb")
     args = parser.parse_args()
     scene = Scene()
     scene.import_emil(*read_reference(args.reference))
     make_arm(scene)
+    make_optics(scene)
+    make_lidar(scene)
+    make_mounts(scene)
+    scene.doc["extras"]["static_obstacles"]=scene.obstacles
     scene.write(args.output)
 
 

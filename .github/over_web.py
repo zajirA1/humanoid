@@ -139,12 +139,15 @@ def main():
         if zdroj != bez_relace:
             raise ValueError(f"Model {model} nebo jeho přepínač neodpovídá vydání.")
     tisk = base / "tisk/emil"
-    soubory = {cesta.name for cesta in tisk.iterdir() if cesta.suffix in {".stl", ".3mf"}}
-    if not {"miska.stl", "koule.stl", "sablona.stl", "miska.3mf", "koule.3mf", "sablona.3mf"}.issubset(soubory):
+    soubory = {cesta.name for cesta in tisk.iterdir() if cesta.suffix in {".stl", ".3mf", ".zip"}}
+    dily = ["miska", "koule", "sablona", "talir", "stojan", "pojistka-tabletu", "prichytka-ramene", "stereo-lista"]
+    vydani = {f"{dil}.{typ}" for dil in dily for typ in ("stl", "3mf")} | {"stereo-kalibrace.zip"}
+    if soubory != vydani:
         raise ValueError("Ve vydání chybí tiskové modely Emila.")
     for nazev in sorted(soubory):
         with client.open(url + endpoint(nazev, "tisk-emil"), timeout=45) as odpoved:
-            if (odpoved.headers.get_content_type() != "model/" + Path(nazev).suffix[1:]
+            mime = "application/zip" if nazev.endswith(".zip") else "model/" + Path(nazev).suffix[1:]
+            if (odpoved.headers.get_content_type() != mime
                     or odpoved.headers.get_filename() != nazev
                     or odpoved.read() != (tisk / nazev).read_bytes()):
                 raise ValueError(f"Stažený tiskový model {nazev} neodpovídá vydání.")

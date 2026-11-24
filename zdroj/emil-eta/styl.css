@@ -102,3 +102,8 @@ body{font-size:16px}
 #seq{max-width:185px}.controls{flex-wrap:wrap}.time{white-space:nowrap}
 @media(max-width:700px){.info dl,.katalog{grid-template-columns:1fr}.actions{max-width:45%}.stage{height:clamp(320px,55vh,440px)}.panel .sliders{gap:7px 14px}.views{left:8px;right:auto}.strip,.controls{font-size:14px}}
 .auditpanel{margin:14px 0;display:flex;flex-wrap:wrap;gap:12px;align-items:center}.auditpanel output,.katalog .slicer{color:#465b66;font-size:14px}.print{scroll-margin-top:12px}
+#stereoPanel{scroll-margin-top:12px}.stereo-controls{margin:14px 0;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}.stereo-controls label{font-weight:600}.stereo-controls input[type=number]{font:inherit;max-width:12em;padding:6px}
+.camera-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.camera-pair figure{margin:0;min-width:0}.camera-pair figcaption{margin:4px 0 7px}.camera-pair canvas{width:100%;height:auto;display:block;background:#e8eff0;border-radius:6px}
+.camera-pair input{max-width:100%}#realPane canvas{cursor:crosshair}.measure,.scan-status{display:block;font-variant-numeric:tabular-nums;margin-top:10px;font-weight:600;color:#175e67}.scan-status{font-size:14px}.print .mount{margin:12px 0 16px;padding-left:18px}.print .mount li{margin:5px 0}
+#simPane[hidden],#realPane[hidden],.scan-status[hidden]{display:none}.camera-pair+.measure{min-height:1.5em}
+@media(max-width:600px){.camera-pair{grid-template-columns:1fr}.views{flex-wrap:wrap}.views button{padding:5px}.actions .tisklink{font-size:14px}}

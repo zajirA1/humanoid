@@ -1,5 +1,5 @@
 function render(){if(!width)return;const fs=active(),q=manual||sample(fs,currentTime),o=carried(fs,currentTime,q);
- camera();drawFloor(fs);drawMeshes(world(q,o.pos));}
+ simulatedStereo(q,o.pos);camera();drawFloor(fs);drawLaserPlane(q,o.held);drawMeshes(world(q,o.pos));}
 function setMsg(t){$('notice').textContent=t;}
 function stop(){playing=false;$('play').textContent='Přehrát';}
 function moveTo(t,idx=-1){stop();manual=null;currentTime=clamp(t,0,active().at(-1)?.t_s||0);selected=idx;if(idx>=0&&editing){$('pname').value=active()[idx].label;$('event').value=active()[idx].event||'';}ui();render();}
@@ -11,6 +11,7 @@ function ui(){
  $('time').textContent=currentTime.toFixed(1)+' / '+end.toFixed(1)+' s';$('timebar').max=end||1;$('timebar').value=currentTime;
  $('coords').textContent=['X','Y ↑','Z'].map((k,i)=>k+' '+Math.round(tip[i])).join('  ·  ')+' mm';$('object').textContent='Předmět · '+o.state;
  names.forEach((k,i)=>{$('q'+i).value=q[i];$('v'+i).textContent=q[i].toFixed(1)+(i===3?' mm':'°');});
+ updateScanLabel(q,o.held);
  const st=$('status');st.textContent=outside.length?'Možný průnik · '+outside.join(', '):o.issue||'Kontrolované obálky mají v této poloze volný průchod.';st.classList.toggle('warn',!!outside.length||!!o.issue);
  $('count').textContent='Vlastní program · '+own.length+' poloh';$('undo').disabled=!own.length;$('replace').disabled=seq!=='own'||selected<0;$('play').disabled=fs.length<2;
  $('save').disabled=!fs.length;$('timebar').disabled=fs.length<2;$('demoTab').setAttribute('aria-selected',String(!editing));$('teachTab').setAttribute('aria-selected',String(editing));$('teachBox').hidden=!editing;
@@ -41,10 +42,10 @@ function frame(ts){if(!playing)return;const end=active().at(-1).t_s;currentTime=
  if(ts-lastUI>65||currentTime>=end){ui();lastUI=ts;}render();if(currentTime>=end){stop();return;}requestAnimationFrame(frame);}
 $('play').onclick=()=>{if(playing){stop();return;}if(active().length<2)return;manual=null;selected=-1;if(currentTime>=active().at(-1).t_s-.001)currentTime=0;playing=true;$('play').textContent='Pozastavit';lastStamp=performance.now();requestAnimationFrame(frame);};
 function download(data,type,name){const url=URL.createObjectURL(new Blob([data],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
-$('save').onclick=()=>{download(JSON.stringify({...recipe,name:presets[seq]?.name||'Vlastní pohyb',waypoints:active()},null,2),'application/json','Emil-ETA-V2-pohyb.json');};
-$('glb').onclick=()=>download(raw,'model/gltf-binary','Emil-ETA-Waveshare-V2.glb');
+$('save').onclick=()=>{download(JSON.stringify({...recipe,name:presets[seq]?.name||'Vlastní pohyb',waypoints:active()},null,2),'application/json','Emil-ETA-V3-pohyb.json');};
+$('glb').onclick=()=>download(raw,'model/gltf-binary','Emil-ETA-Waveshare-V3.glb');
 $('load').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>1024*1024)throw Error('Soubor je příliš velký.');const p=JSON.parse(await file.text());
- if(p.format!==recipe.format||p.model!==recipe.model)throw Error('Nekompatibilní formát nebo model.');const candidate=validate(p.waypoints);if(own.length&&!confirm('Nahradit vlastní program importovanými polohami?'))return;own=candidate;persist();pickSeq('own');mode(true);setMsg('Program načten.');}catch(e){setMsg(e.message);}finally{e.target.value='';}};
+ if(p.format!==recipe.format||![recipe.model,'ETA 5229 / Waveshare Robot Arm for Pi / V2'].includes(p.model))throw Error('Nekompatibilní formát nebo model.');const candidate=validate(p.waypoints);if(own.length&&!confirm('Nahradit vlastní program importovanými polohami?'))return;own=candidate;persist();pickSeq('own');mode(true);setMsg('Program načten.');}catch(e){setMsg(e.message);}finally{e.target.value='';}};
 try{const p=JSON.parse(localStorage.getItem('emil-eta-waveshare-v2'));if(p?.length)own=validate(p);}catch{}
 function vbuttons(view){document.querySelectorAll('[data-v]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===view)));}
 document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{const v=b.dataset.v;
