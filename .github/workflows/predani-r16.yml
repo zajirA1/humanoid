@@ -17,7 +17,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       REZIM: ${{ matrix.rezim }}
       REPO: ${{ github.repository }}
-      VYDANI: 7b1d948348e749a66e359e7e187e41f68c53402c
+      VYDANI: 3e6a0dfbeed3f3f44eb64b485cbd04f187643fdf
     steps:
       - name: Pouhý push nic nespouští
         run: echo "Pro příslušný režim je nutné ruční spuštění této konkrétní úlohy."
@@ -26,6 +26,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$REPO" = zajirA1/humanoid
+          test "$GITHUB_TRIGGERING_ACTOR" = zajirA1
           test "$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)" = "$VYDANI"
           RUNS=$(gh api --method GET "repos/$REPO/actions/workflows/nasazeni.yml/runs" -f head_sha="$VYDANI" -f event=workflow_dispatch -f per_page=100)
           if jq -e --arg title "Nasazení · $REZIM" 'any(.workflow_runs[]; .display_title==$title and (.status!="completed" or .conclusion=="success"))' <<< "$RUNS" >/dev/null; then
