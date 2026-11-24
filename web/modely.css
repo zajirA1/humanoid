@@ -1,0 +1,24 @@
+#robot-modely {
+    display: flex;
+    align-items: stretch;
+    gap: .3rem;
+    margin: 0;
+    padding: 0 max(1rem, calc((100% - 1290px) / 2));
+    border-bottom: 1px solid #bfcfc6;
+    background: #edf2ee;
+    font: 600 .94rem/1.25 system-ui, sans-serif;
+}
+#robot-modely a {
+    padding: .8rem .95rem .65rem;
+    border-bottom: 3px solid transparent;
+    color: #34594e;
+    text-decoration: none;
+}
+#robot-modely a:hover,
+#robot-modely a:focus-visible { background: #dfeae3; }
+#robot-modely a:focus-visible { outline: 2px solid #165843; outline-offset: -4px; }
+#robot-modely a[aria-current="page"] { border-color: #25654f; color: #153d31; }
+@media (max-width: 420px) {
+    #robot-modely { padding-inline: .55rem; }
+    #robot-modely a { padding-inline: .7rem; }
+}

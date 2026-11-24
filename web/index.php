@@ -28,6 +28,8 @@ function pokusy_nacti(string $soukrome): array {
 }
 $klic = sha1((string) ($_SERVER['REMOTE_ADDR'] ?? '?'));
 $chyba = '';
+$emil = ($_GET['model'] ?? '') === 'emil';
+$adresaModelu = $emil ? './?model=emil' : './';
 
 if (isset($_GET['odhlasit'])) {
     $_SESSION = [];
@@ -47,7 +49,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && empty($_SESSION['ok'])) 
         $_SESSION['ok'] = true;
         unset($pokusy[$klic]);
         @file_put_contents(pokusy_soubor($soukrome), json_encode($pokusy), LOCK_EX);
-        header('Location: ./');
+        header('Location: ' . $adresaModelu);
         exit;
     } else {
         usleep(700000);
@@ -64,6 +66,23 @@ if (($_GET['data'] ?? '') === 'tisk-r16') {
     exit;
 }
 
+if (($_GET['data'] ?? '') === 'tisk-emil') {
+    if (empty($_SESSION['ok'])) { http_response_code(403); exit; }
+    $nazev = $_GET['file'] ?? '';
+    $dovolene = ['miska.stl', 'koule.stl', 'sablona.stl', 'miska.3mf', 'koule.3mf', 'sablona.3mf'];
+    if (!in_array($nazev, $dovolene, true)) {
+        http_response_code(404); exit;
+    }
+    $cesta = __DIR__ . '/app/tisk/emil/' . $nazev;
+    if (!is_file($cesta)) { http_response_code(404); exit; }
+    header('Content-Type: ' . (str_ends_with($nazev, '.3mf') ? 'model/3mf' : 'model/stl'));
+    header('Content-Disposition: attachment; filename="' . $nazev . '"');
+    header('Content-Length: ' . filesize($cesta));
+    header('Cache-Control: private, no-cache');
+    session_write_close();
+    readfile($cesta); exit;
+}
+
 if (!empty($_SESSION['ok']) && ($_GET['data'] ?? '') === 'kondo') {
     // data prohlížeče Kondo (3,7 MB) se stahují až při jeho otevření, ne s každým načtením simulátoru
     $f = __DIR__ . '/app/kondo-data.json';
@@ -75,20 +94,25 @@ if (!empty($_SESSION['ok']) && ($_GET['data'] ?? '') === 'kondo') {
 }
 
 if (!empty($_SESSION['ok'])) {
-    $soubor = __DIR__ . '/app/emil-h22.html';
+    $soubor = __DIR__ . ($emil ? '/app/emil-eta.html' : '/app/emil-h22.html');
     if (!is_file($soubor)) { http_response_code(500); exit('Soubor simulátoru na serveru chybí.'); }
     if (empty($_SESSION['csrf'])) { $_SESSION['csrf'] = bin2hex(random_bytes(16)); }
     header('Content-Type: text/html; charset=utf-8');
     header('Cache-Control: private, no-cache');
     // Simulátor má ~15 MB: prohlížeč si ho drží v mezipaměti a při dalším otevření se jen ověří (304), dokud se soubor ani relace nezmění.
-    $etag = '"' . sha1(filemtime($soubor) . ':' . filesize($soubor) . ':' . (string) $_SESSION['csrf']) . '"';
+    $etag = '"' . sha1($adresaModelu . ':' . filemtime(__FILE__) . ':' . filemtime($soubor) . ':' . filesize($soubor) . ':' . (string) $_SESSION['csrf']) . '"';
     header('ETag: ' . $etag);
     if (str_replace('-gzip', '', trim((string) ($_SERVER['HTTP_IF_NONE_MATCH'] ?? ''))) === $etag) { http_response_code(304); exit; }
     // Klíč pro odesílání přepočtu (api.php) – vkládá se do stránky až po přihlášení.
     $meta = '<meta name="robot-csrf" content="' . htmlspecialchars((string) $_SESSION['csrf'], ENT_QUOTES) . '"><meta name="robot-api" content="api.php">';
+    $meta .= '<link rel="stylesheet" href="./modely.css">';
+    $aktualni = ' aria-current="page"';
+    $navigace = '<nav id="robot-modely" aria-label="Model robota">'
+        . '<a href="./"' . ($emil ? '' : $aktualni) . '>Humanoid H22</a>'
+        . '<a href="./?model=emil"' . ($emil ? $aktualni : '') . '>Emil na vysavači</a></nav>';
     $html = (string) file_get_contents($soubor);
-    $i = strpos($html, '</head>');
-    echo $i === false ? $meta . $html : substr($html, 0, $i) . $meta . substr($html, $i);
+    $html = preg_replace('~</head>~i', $meta . '$0', $html, 1);
+    echo preg_replace('~<body\b[^>]*>~i', '$0' . $navigace, $html, 1);
     exit;
 }
 
@@ -103,8 +127,8 @@ h1{font-size:20px;margin:0 0 16px}label{display:block;font-weight:600;margin-bot
 input{width:100%;box-sizing:border-box;font:inherit;padding:10px;border:1px solid #c9c1b2;border-radius:8px}
 button{margin-top:14px;width:100%;font:600 16px/1 inherit;padding:12px;border:0;border-radius:8px;background:#1f2a30;color:#fff;cursor:pointer}
 p{color:#8a3a2a;margin:12px 0 0}input:focus-visible,button:focus-visible{outline:2px solid #ad653a;outline-offset:2px}</style></head>
-<body><form method="post" action="./" autocomplete="on">
-<h1>Humanoid · simulátor</h1>
+<body><form method="post" action="<?= $adresaModelu ?>" autocomplete="on">
+<h1><?= $emil ? 'Emil na vysavači' : 'Humanoid' ?> · simulátor</h1>
 <label for="heslo">Heslo</label>
 <input type="password" id="heslo" name="heslo" autocomplete="current-password" required autofocus>
 <input type="hidden" name="csrf" value="<?= htmlspecialchars((string) $_SESSION['csrf'], ENT_QUOTES) ?>">

@@ -20,9 +20,12 @@ from io import BytesIO
 
 class Formular(HTMLParser):
     csrf = None
+    action = None
 
     def handle_starttag(self, tag, atts):
         data = dict(atts)
+        if tag == "form" and data.get("method") == "post":
+            self.action = data.get("action")
         if tag == "input" and data.get("name") == "csrf":
             self.csrf = data.get("value")
 
@@ -101,12 +104,12 @@ def main():
                 raise ValueError("Neočekávaná odpověď webu.")
             return response.read()
 
-    def endpoint(name):
-        return "index.php?" + urlencode({"data": "tisk-r16", "file": name})
+    def endpoint(name, katalog="tisk-r16"):
+        return "index.php?" + urlencode({"data": katalog, "file": name})
 
-    def denied(name, code):
+    def denied(name, code, katalog="tisk-r16"):
         try:
-            get(endpoint(name))
+            get(endpoint(name, katalog))
         except HTTPError as err:
             if err.code == code:
                 return
@@ -115,15 +118,37 @@ def main():
 
     base = Path("web/app")
     form = Formular()
-    form.feed(get("").decode())
-    if not form.csrf:
-        raise ValueError("Přihlášení neobsahuje token formuláře.")
+    form.feed(get("?model=emil").decode())
+    if not form.csrf or form.action != "./?model=emil":
+        raise ValueError("Přihlášení do Emila nezachovalo cílovou záložku.")
     denied("catalog.json", 403)
-    app = get("", {"csrf":form.csrf, "heslo":os.environ["ROBOT_HESLO"]})
-    # Server vkládá dva hlavičkové prvky s údaji aktuální relace.
-    app = re.sub(br'<meta name="robot-(?:csrf|api)" content="[^"]*">', b'',app)
-    if app != (base/"emil-h22.html").read_bytes():
-        raise ValueError("Přihlášený web nevydal aktuální aplikaci.")
+    denied("miska.stl", 403, "tisk-emil")
+    emil = get(form.action, {"csrf": form.csrf, "heslo": os.environ["ROBOT_HESLO"]})
+    css = b'<link rel="stylesheet" href="./modely.css">'
+    if get("modely.css") != Path("web/modely.css").read_bytes():
+        raise ValueError("Styly záložek neodpovídají vydání.")
+    for model, odpoved in [("emil-eta", emil), ("emil-h22", get(""))]:
+        aktivni = ' aria-current="page"'
+        prvni = aktivni if model == "emil-h22" else ""
+        druhy = aktivni if model == "emil-eta" else ""
+        nav = (f'<nav id="robot-modely" aria-label="Model robota"><a href="./"{prvni}>Humanoid H22</a>'
+               f'<a href="./?model=emil"{druhy}>Emil na vysavači</a></nav>').encode()
+        zdroj = (base / f"{model}.html").read_bytes().replace(b"</head>", css + b"</head>", 1)
+        zdroj = re.sub(br"<body\b[^>]*>", lambda match: match.group() + nav, zdroj, count=1, flags=re.I)
+        bez_relace = re.sub(br'<meta name="robot-(?:csrf|api)" content="[^"]*">', b'', odpoved)
+        if zdroj != bez_relace:
+            raise ValueError(f"Model {model} nebo jeho přepínač neodpovídá vydání.")
+    tisk = base / "tisk/emil"
+    soubory = {cesta.name for cesta in tisk.iterdir() if cesta.suffix in {".stl", ".3mf"}}
+    if not {"miska.stl", "koule.stl", "sablona.stl", "miska.3mf", "koule.3mf", "sablona.3mf"}.issubset(soubory):
+        raise ValueError("Ve vydání chybí tiskové modely Emila.")
+    for nazev in sorted(soubory):
+        with client.open(url + endpoint(nazev, "tisk-emil"), timeout=45) as odpoved:
+            if (odpoved.headers.get_content_type() != "model/" + Path(nazev).suffix[1:]
+                    or odpoved.headers.get_filename() != nazev
+                    or odpoved.read() != (tisk / nazev).read_bytes()):
+                raise ValueError(f"Stažený tiskový model {nazev} neodpovídá vydání.")
+    denied("neznamy.stl", 404, "tisk-emil")
     if get("index.php?data=kondo") != (base/"kondo-data.json").read_bytes():
         raise ValueError("Podklady Kondo na webu neodpovídají vydání.")
     catalog_path = base/"tisk/R16/catalog.json"
