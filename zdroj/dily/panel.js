@@ -139,6 +139,12 @@ function r16CreateParts() {
     }
     if(row){
       fact('Výrobní stav',row.status);
+      if(row.slice?.stav==='prošlo' && !changed()){
+        fact('Příprava tiskových drah', 'Prošlo · Bambu Studio');
+        fact('Spotřeba filamentu',row.slice.gramy.toFixed(2).replace('.',',')+' g');
+        fact('Tiskový profil',row.slice.material+' · X1 Carbon · '+row.slice.plat);
+        fact('Automatické podpěry',row.slice.podpery?'Ano':'Ne');
+      }
       fact('Rozměry ve směru tisku',czSize(row.print_dimensions_mm));
       if(row.volume_cm3!=null)fact('Objem plného modelu',fmt(row.volume_cm3,2)+' cm³');
       if(row.solid_mass_reference_g!=null)fact('Hmotnost plného materiálu',fmt(row.solid_mass_reference_g,1)+' g při '+fmt(row.solid_reference_density_g_cm3,2)+' g/cm³');
@@ -169,7 +175,7 @@ function r16CreateParts() {
     if(row.files.project3mf&&row.reinforcement?.length)add('Projekt X1C','V Bambu Studiu otevři soubor jako projekt a v panelu Objekty ověř místní modifikátory.');
     if(p.preset_file)link(output,'Stáhnout profil Bambu Studio',p.preset_file);
     add('Anycubic Slicer Next · Kobra S1 Max',p.kobra?.steps);
-    add('Hmotnost výtisku','Odhad s výplní zjistíš po rozřezání dílu s vlastním profilem. Hmotnost plného materiálu v tabulce vychází z objemu geometrie.');
+    if(!row.slice)add('Hmotnost výtisku','Odhad s výplní zjistíš po rozřezání dílu s vlastním profilem. Hmotnost plného materiálu v tabulce vychází z objemu geometrie.');
     $('r16PartProcess').hidden=!output.childElementCount;
   }
   function show(ref,row=null,color=null){

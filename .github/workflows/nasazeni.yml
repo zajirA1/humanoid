@@ -48,10 +48,18 @@ jobs:
             python -m venv "$RUNNER_TEMP/tisk-r16"
             export PATH="$RUNNER_TEMP/tisk-r16/bin:$PATH"
             python -m pip install numpy==2.3.5 scipy==1.17.0 lib3mf==2.5.0 libigl==2.6.3
-            python -I zdroj/tisk/generuj.py
+            # Nasazujeme přesné projekty, pro které Bambu Studio uložilo dráhy a spotřebu.
+            echo '6bb8d8983fcffd494817bb2fd11163a1999a181831895f74b4da15eb9ed1bc8c  kontrola/data/model.json' | sha256sum -c -
+            python -m zipfile -e zdroj/revize/R16/tisk-overeny.zip web/app/tisk/R16
             python -I testy/t_tisk.py --lib3mf --rezy --cgal
             python -c 'import json; s=json.load(open("web/app/tisk/R16/catalog.json"))["summary"]; assert s["printable_count"] == 54 and s["catalog_entries"] == 352'
           fi
+      - name: Kontrola zobrazení 54 tiskových karet před nahráním
+        if: hashFiles('web/app/tisk/R16/catalog.json') != ''
+        run: |
+          python -m venv "$RUNNER_TEMP/overeni-karet"
+          "$RUNNER_TEMP/overeni-karet/bin/pip" install playwright==1.58.0
+          "$RUNNER_TEMP/overeni-karet/bin/python" -I .github/over_web.py --mistni
       - name: Kontrola nastavení
         run: |
           test -n "$FTP_USERNAME" || { echo "Chybí secret FTP_USERNAME"; exit 1; }
@@ -109,6 +117,9 @@ jobs:
         if: inputs.rezim == 'nasazeni'
         env:
           URL: ${{ vars.ROBOT_URL || 'https://robot.caribhaus.com' }}
-        run: python -I .github/over_web.py
+        run: |
+          PYTHON=python
+          if [ -x "$RUNNER_TEMP/overeni-karet/bin/python" ]; then PYTHON="$RUNNER_TEMP/overeni-karet/bin/python"; fi
+          "$PYTHON" -I .github/over_web.py
       - name: Souhrn
         run: echo "Režim ${{ inputs.rezim }} · commit ${GITHUB_SHA::7} · cíl $FTP_SERVER$FTP_SERVER_DIR" >> "$GITHUB_STEP_SUMMARY"
