@@ -12,7 +12,7 @@ from pathlib import Path
 import re
 import sys
 from urllib.error import HTTPError
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import urlencode, urljoin, urlsplit
 from urllib.request import build_opener, HTTPCookieProcessor, Request
 from zipfile import ZipFile
 from io import BytesIO
@@ -58,16 +58,20 @@ def over_karty(url, manifest, cookies=()):
             kobra = part["kobra"]
             link = page.get_by_role("link", name="Stáhnout G-code · Kobra S1 Max · 0,4 mm · " + kobra["material"], exact=True)
             expect(link).to_be_visible()
-            with page.expect_download(timeout=120000) as pending:
-                link.click()
-            download = pending.value
-            if download.suggested_filename != Path(kobra["file"]).name:
-                raise ValueError(f"Jiný název G-code na kartě {ident}.")
-            with download.path().open("rb") as stream:
-                digest = hashlib.file_digest(stream, "sha256").hexdigest()
+            filename = Path(kobra["file"]).name
+            expect(link).to_have_attribute("download", filename)
+            target = urljoin(page.url, link.get_attribute("href"))
+            if urlsplit(target).netloc != urlsplit(url).netloc:
+                raise ValueError(f"Odkaz mimo web u {ident}.")
+            response = context.request.get(target, timeout=120000, max_redirects=0)
+            if not response.ok:
+                raise ValueError(f"Stažení {ident} skončilo HTTP {response.status}.")
+            if cookies and response.headers.get("content-disposition") != f'attachment; filename="{filename}"':
+                raise ValueError(f"Server neposlal soubor {filename} jako přílohu.")
+            digest = hashlib.sha256(response.body()).hexdigest()
+            response.dispose()
             if digest != kobra["sha256"] or digest != manifest["file_checksums"][kobra["file"]]:
                 raise ValueError(f"Stažený G-code neodpovídá dílu {ident}.")
-            download.delete()
             print(ident, kobra["material"], kobra["gramy"], "g · G-code stažen z karty a ověřen", flush=True)
         browser.close()
     print(f"Ověřeno všech {len(parts)} zobrazených karet na {url}", flush=True)
