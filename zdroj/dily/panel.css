@@ -1,0 +1,13 @@
+#r16PartDialog{width:min(900px,94vw);max-width:96vw;max-height:92dvh;overflow:auto;border:1px solid #aec5bd;border-radius:13px;background:#fbfbf6;color:#1e4039;padding:0;box-shadow:0 18px 75px #132d3266}
+#r16PartDialog::backdrop{background:#142c2c9e}#r16PartDialog header{margin:0;padding:14px 18px;border-bottom:1px solid #ccd7d0;display:flex;justify-content:space-between;align-items:center;gap:10px}
+#r16PartDialog h2{margin:1px 0 0;font:normal clamp(22px,3vw,32px)/1.15 Georgia,serif}#r16PartDialog small{font-size:12px;color:#52675d}
+#r16PartDialog .part-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(245px,1fr);gap:16px;padding:16px}#r16PartDialog .part-viewport{height:clamp(260px,45vh,480px);position:relative;background:#e4ece7;border:1px solid #bdcdc2;border-radius:8px;overflow:hidden}
+#r16PartCanvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}#r16PartCanvas:active{cursor:grabbing}
+#r16PartEmpty{position:absolute;inset:0;background:#e5ece7;display:grid;place-content:center;padding:15px;text-align:center;margin:0}
+#r16PartDialog .part-tools,#r16PartDownloads{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0}#r16PartDialog .part-tools span{font-size:12px;flex:1}
+#r16PartDialog .part-tools button,#r16GoJoint{font-size:12px;padding:6px 8px}
+#r16PartDialog fieldset{border:1px solid #cad7ce;border-radius:7px;margin:0;padding:8px 10px}#r16PartDialog label{display:grid;font-size:12px;gap:3px;margin:5px 0;color:#415b50}#r16PartDialog input,#r16PartDialog select{width:100%;min-width:0;font:inherit;color:#23463c;padding:7px;border:1px solid #adc1b4;background:#fff;border-radius:5px}
+#r16PartFacts{margin:10px 0}#r16PartFacts div{display:grid;grid-template-columns:minmax(100px,1fr) 1.4fr;gap:8px;border-bottom:1px solid #d8e1db;padding:5px 0;font-size:13px}#r16PartFacts dt{color:#566b5f}#r16PartFacts dd{margin:0;text-align:right;overflow-wrap:anywhere}
+#r16PartSource,#r16PartNote,#r16PartProcessBody{font-size:13px;line-height:1.48}#r16PartDownloads a,.r16-profile-link{border-radius:6px;padding:7px 10px;text-decoration:none;background:#e2ece5;color:#245044;border:1px solid #b2c7bc;font-size:13px}#r16PartDownloads a:first-child{background:#275849;color:white}
+#r16PartProcess{margin:12px 0}#r16PartProcess summary{cursor:pointer;font-weight:600;font-size:13px}
+@media(max-width:680px){#r16PartDialog .part-layout{grid-template-columns:1fr;padding:9px;gap:6px}#r16PartDialog .part-viewport{height:clamp(180px,31vh,360px)}#r16PartDialog header{padding:9px 12px}}

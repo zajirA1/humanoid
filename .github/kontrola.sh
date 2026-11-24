@@ -4,6 +4,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 if git ls-files | grep -E '(^|/)(tajne\.php|pokusy\.json|\.env)$|soukrome/relace/'; then echo "V repozitáři je soubor s heslem nebo daty ze serveru"; exit 1; fi
 php -l web/index.php
+php -l web/soukrome/tisk.php
+python3 -I -m py_compile .github/over_web.py zdroj/aplikace09/sestav.py zdroj/dily/patch.py zdroj/tisk/*.py kontrola/tempo_schodu.py
 grep -q 'Require all denied' web/app/.htaccess
 grep -q 'Require all denied' web/soukrome/.htaccess
 grep -q 'Disallow: /' web/robots.txt

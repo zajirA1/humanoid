@@ -43,6 +43,12 @@ Po změně výchozího pohybu: `python3 -I kontrola/prepocet.py <{}> <výstup> -
 `build_r14.py` nanáší i opravy z auditu (`zdroj/uprava-kloubu/audit_upravy.py`: načítání, mobil, přiblížení dvěma prsty, výška schodu, karta Mezery,
 export 3MF s úchyty) a vyjme data Konda do `web/app/kondo-data.json` (servíruje `index.php?data=kondo` po přihlášení; patří do nasazení).
 
+## Aplikace 0.9 pro R16
+
+Repozitář obsahuje sestavené `web/app/emil-h22.html`. Pro reprodukci vezmi vstupní stránku R16 z commitu `0a19b1c` a spusť `python3 -I zdroj/aplikace09/sestav.py /tmp/r16-08.html zdroj/revize/R16/tempo-schodu.json web/app/emil-h22.html`. Potom aplikuj inspektor příkazem `python3 -I zdroj/dily/patch.py web/app/emil-h22.html`. Povelové časy a záznam fyzikální simulace vznikají v `kontrola/tempo_schodu.py`. Měřítko přehrávače mění pouze rychlost prohlížení.
+
+Tiskový katalog patří jen k výchozí geometrii R16. Sestavuje se z vydané stránky a modelu nástrojem `zdroj/tisk/generuj.py`; v produkci ho po přihlášení vydává `index.php`. Konkrétní meze kolizí, odchylky a dokončení jednotlivých profilů jsou v `zdroj/revize/R16/tempo-schodu.json`.
+
 ## Nová revize z úpravy kloubů
 
 Workflow *Nová revize* (`.github/workflows/nova-revize.yml`, vstup = označení prošlého plného přepočtu) spustí

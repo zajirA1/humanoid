@@ -112,40 +112,98 @@ def mj_xml(P,E,links,mu=0.5,step_h=STEP,mass_scale=1.0,lim_scale=1.0,kp_scale=1.
 <default class="env"><geom contype="1" conaffinity="2"/></default><default class="foot"><geom contype="2" conaffinity="1"/></default><default class="pad"><geom contype="2" conaffinity="1"/></default></default>
 <worldbody><geom name="floor" type="plane" size="2 2 .1" class="env"/><geom name="step" type="box" pos="0 -0.14 {step_h*MM/2:.5f}" size="0.33 0.14 {step_h*MM/2:.5f}" class="env"/>
 <body name="b22" pos="0 0 0"><freejoint name="root"/>{inertial(22)}{''.join(body(c) for c in children[22])}</body></worldbody><actuator>{act}</actuator></mujoco>'''
-def simuluj(frames,P,E,links,G,ff,mu=0.5,step_h=STEP,mass_scale=1.0,lim_scale=1.0,y_offset=0.0,settle=1.0,tail=3.0,vyvazovani=None,momenty=False):
+def simuluj(frames,P,E,links,G,ff,mu=0.5,step_h=STEP,mass_scale=1.0,lim_scale=1.0,y_offset=0.0,settle=1.0,tail=3.0,vyvazovani=None,momenty=False,*,casy_s=None,pohon=None,hz_zaznamu=6):
     import mujoco
     MM=1e-3; m=mujoco.MjModel.from_xml_string(mj_xml(P,E,links,mu,step_h,mass_scale,lim_scale,G=G)); d=mujoco.MjData(m)
     Q=np.radians(np.array([f['q'] for f in frames])); n=len(frames); T=(n-1)/HZ
+    osa = None if casy_s is None else np.asarray(casy_s, dtype=float)
+    if osa is not None:
+        if osa.shape != (n,) or not np.all(np.isfinite(osa)) or osa[0] != 0 or np.any(np.diff(osa) <= 0):
+            raise ValueError("Čas uzlů musí začínat nulou a přísně růst.")
+        T = float(osa[-1])
     kpv=np.array([m.actuator_gainprm[j,0] for j in range(22)]); Q=Q+ff/kpv
     R0,t0=rt2T(frames[0]['rt']); quat=np.zeros(4); mujoco.mju_mat2Quat(quat,np.ascontiguousarray(R0).reshape(-1))
     d.qpos[:3]=(t0+np.array([0,y_offset,0.3]))*MM; d.qpos[3:7]=quat; d.qpos[7:29]=np.radians(frames[0]['q']); d.ctrl[:]=Q[0]; mujoco.mj_forward(m,d)
-    dt=m.opt.timestep; nst=int(round((settle+T+tail)/dt)); every=int(round(1/(6*dt))); lim=LIM*lim_scale
+    dt=m.opt.timestep; nst=int(round((settle+T+tail)/dt)); every=max(1,int(round(1/(hz_zaznamu*dt)))); lim=LIM*lim_scale
     pk=np.zeros(22); tt=[];root=[];qs=[];taupk=[]; div=None; nsat=0; ntot=0; VV=None; oprava=np.zeros(22)
+    vrcholy_uzlu = np.zeros((n,22)) if momenty=="uzly" else None
     usej=[j for j in range(22) if j not in (11,21)]
+    indexy = np.arange(n)
+    cesta = np.interp(np.arange(nst)*dt-settle, osa, indexy) if osa is not None else None
+    if pohon is not None:
+        # Pracovní aproximace DC pohonu. V motorickém směru klesá dostupný
+        # moment k nule při katalogových otáčkách naprázdno. Brzdný moment
+        # zůstává omezen projektovou mezí. Dvojice serv sdílí převod 1:1.
+        naprazdno=np.radians(np.asarray(pohon["naprazdno_deg_s"]))
+        blokovani=np.asarray(pohon["blokovani_nm"])*lim_scale
+        pomer_rychlosti=np.zeros(22)
+        chodidla=[m.geom('sole7').id,m.geom('sole17').id]
+        stupen=m.geom('step').id
+        sily_chodidel=[]
+        sila_kontaktu=np.zeros(6)
     for k in range(nst):
-        t=k*dt-settle; u=min(max(t,0),T)*HZ; i=min(int(u),n-2); a=u-i; d.ctrl[:]=Q[i]*(1-a)+Q[i+1]*a
+        t=k*dt-settle; u=cesta[k] if cesta is not None else min(max(t,0),T)*HZ; i=min(int(u),n-2); a=u-i; d.ctrl[:]=Q[i]*(1-a)+Q[i+1]*a
         if vyvazovani is not None:
             if VV is None:
                 import vyvazovani as _v; VV=getattr(_v,vyvazovani.get('trida','Vyvazovani'))(m,vyvazovani['cile'],vyvazovani.get('nez'),**vyvazovani.get('zesileni',{})); VV.ladit=vyvazovani.get('ladit',False); oprava=np.zeros(22)
             if t>=0 and k%20==0:
                 fi=min(n-1,max(0,int(round(u)))); oprava=VV.krok(d,fi,rt2T(frames[fi]['rt'])[0],0.02,frames[fi].get('com'))
             d.ctrl[:]+=oprava
+        if pohon is not None:
+            v=d.qvel[6:28]/naprazdno
+            m.actuator_forcerange[:,0]=-np.minimum(lim,blokovani*np.clip(1+v,0,1))
+            m.actuator_forcerange[:,1]=np.minimum(lim,blokovani*np.clip(1-v,0,1))
+            if t>=0: pomer_rychlosti=np.maximum(pomer_rychlosti,np.abs(v))
         mujoco.mj_step(m,d); af=np.abs(d.actuator_force); pk=np.maximum(pk,af)
+        if vrcholy_uzlu is not None and 0<=t<=T:
+            nejblizsi=min(n-1,int(u+0.5))
+            np.maximum(vrcholy_uzlu[nejblizsi],af,out=vrcholy_uzlu[nejblizsi])
         if t>=0: ntot+=1; nsat+=bool((af[usej]>=lim[usej]*0.999).any())
         if (k+1)%every==0: tt.append(t); root.append(d.qpos[:7].copy()); qs.append(np.degrees(d.qpos[7:29])); taupk.append(pk.copy()); pk=np.zeros(22)
+        if pohon is not None and (k+1)%every==0 and t>=T-0.5:
+            zatizeni=[0.,0.]
+            for ci in range(d.ncon):
+                kontakt=d.contact[ci]
+                dvojice=(kontakt.geom1,kontakt.geom2)
+                # Spodní plocha chodidla musí spočívat na horní straně;
+                # pouhý boční náraz do svislé stěny se za oporu nepočítá.
+                horni_plocha = kontakt.pos[2] >= step_h*MM-0.002 and abs(kontakt.frame[2]) >= 0.9
+                if stupen in dvojice and horni_plocha:
+                    for noha,gid in enumerate(chodidla):
+                        if gid in dvojice:
+                            mujoco.mj_contactForce(m,d,ci,sila_kontaktu)
+                            zatizeni[noha]+=max(0.,float(sila_kontaktu[0]))
+            sily_chodidel.append((t,zatizeni))
         if not np.all(np.isfinite(d.qpos)): div=t; break
-    tt=np.array(tt); ok=tt>=0; plan=np.array([rt2T(frames[min(n-1,max(0,int(round(t*HZ))))]['rt'])[1] for t in tt])
+    tt=np.array(tt); ok=tt>=0
+    snimky=np.clip(np.rint(np.interp(tt,osa,indexy) if osa is not None else tt*HZ).astype(int),0,n-1)
+    plan=np.array([rt2T(frames[i]['rt'])[1] for i in snimky])
     err=np.linalg.norm(np.array(root)[:,:3]/MM-plan,axis=1)
     Rl=[];tilt=[]
-    for r,t in zip(root,tt):
-        R=np.zeros(9); mujoco.mju_quat2Mat(R,r[3:7]); R=R.reshape(3,3); Rp=rt2T(frames[min(n-1,max(0,int(round(t*HZ))))]['rt'])[0]
+    for r,i in zip(root,snimky):
+        R=np.zeros(9); mujoco.mju_quat2Mat(R,r[3:7]); R=R.reshape(3,3); Rp=rt2T(frames[i]['rt'])[0]
         tilt.append(math.degrees(math.acos(max(-1,min(1,(np.trace(R@Rp.T)-1)/2))))); Rl.append(R)
     ratio=np.array(taupk)/lim; ratio[:,[11,21]]=0
     bad=np.where(err>60)[0]
     res=dict(uspech=bool(err[-1]<25 and tilt[-1]<8 and div is None),odchylka_konec_mm=float(err[-1]),odchylka_max_mm=float(err[ok].max()),naklon_konec_deg=float(tilt[-1]),
              moment_max=float(ratio[ok].max()),moment_kloub=JN[int(np.unravel_index(ratio[ok].argmax(),ratio[ok].shape)[1])],pad_s=None if not len(bad) else float(tt[bad[0]]),na_mezi=float(nsat/max(1,ntot)))
     states=[(Rl[i],np.array(root[i][:3])/MM,qs[i],tt[i]) for i in range(len(tt))]
-    if momenty: res['_snimky']=dict(t=tt[ok].tolist(),pomer=ratio[ok].max(axis=1).tolist(),moment=np.array(taupk)[ok].tolist())  # pro stránku, do protokolu nejde
+    if pohon is not None:
+        res['rychlost_skutecna_pomer']=float(pomer_rychlosti.max())
+        res['rychlost_skutecna_kloub']=JN[int(pomer_rychlosti.argmax())]
+        res['naklon_max_deg']=float(np.max(np.array(tilt)[ok]))
+        konec=int(np.argmin(abs(tt-T)))
+        res['odchylka_pri_dokonceni_mm']=float(err[konec])
+        res['naklon_pri_dokonceni_deg']=float(tilt[konec])
+        # Jednotlivé síly jsou součty normálových reakcí všech kontaktů chodidlo–schod.
+        if sily_chodidel:
+            res['chodidla_na_schodu_N']=min(sily_chodidel,key=lambda vzorek: abs(vzorek[0]-T))[1]
+            res['chodidla_po_ustaleni_N']=sily_chodidel[-1][1]
+        else:
+            res['chodidla_na_schodu_N']=[0., 0.]
+            res['chodidla_po_ustaleni_N']=[0., 0.]
+    if vrcholy_uzlu is not None: res['_momenty_uzlu']=vrcholy_uzlu.round(4).tolist()
+    elif momenty: res['_snimky']=dict(t=tt[ok].tolist(),pomer=ratio[ok].max(axis=1).tolist(),moment=np.array(taupk)[ok].tolist())  # pro stránku, do protokolu nejde
     return res,states
 # ---------- hlavní běh ----------
 def main():

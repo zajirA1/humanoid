@@ -57,6 +57,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && empty($_SESSION['ok'])) 
     }
 }
 
+if (($_GET['data'] ?? '') === 'tisk-r16') {
+    if (empty($_SESSION['ok'])) { http_response_code(403); exit; }
+    require_once __DIR__ . '/soukrome/tisk.php';
+    robot_tisk_r16(is_string($_GET['file'] ?? null) ? $_GET['file'] : '');
+    exit;
+}
+
 if (!empty($_SESSION['ok']) && ($_GET['data'] ?? '') === 'kondo') {
     // data prohlížeče Kondo (3,7 MB) se stahují až při jeho otevření, ne s každým načtením simulátoru
     $f = __DIR__ . '/app/kondo-data.json';

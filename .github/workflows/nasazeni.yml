@@ -39,6 +39,17 @@ jobs:
       - uses: actions/checkout@v6
       - name: Kontrola
         run: bash .github/kontrola.sh
+      - name: Sestavení tiskových podkladů R16
+        if: hashFiles('zdroj/tisk/generuj.py') != ''
+        run: |
+          if [ "$(python -c 'import json; print(json.load(open("kontrola/data/model.json"))["revize"])')" = "R16" ]; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq openscad libgeos-dev
+            python -m pip install numpy scipy lib3mf==2.5.0 libigl==2.6.3
+            python -I zdroj/tisk/generuj.py
+            python -I testy/t_tisk.py --lib3mf --rezy --cgal
+            python -c 'import json; s=json.load(open("web/app/tisk/R16/catalog.json"))["summary"]; assert s["printable_count"] == 54 and s["catalog_entries"] == 352'
+          fi
       - name: Kontrola nastavení
         run: |
           test -n "$FTP_USERNAME" || { echo "Chybí secret FTP_USERNAME"; exit 1; }
@@ -92,5 +103,10 @@ jobs:
           k=$(kod /robots.txt); grep -q 'Disallow: /' /tmp/telo || { echo "::error::robots.txt bez zákazu"; chyba=1; }
           echo "Živé ověření: $([ $chyba = 0 ] && echo v pořádku || echo CHYBA) (přihlášení, noindex, zákazy složek, api 401, robots)" >> "$GITHUB_STEP_SUMMARY"
           exit $chyba
+      - name: Přihlášený simulátor a kontrolní otisky všech výrobních souborů
+        if: inputs.rezim == 'nasazeni'
+        env:
+          URL: ${{ vars.ROBOT_URL || 'https://robot.caribhaus.com' }}
+        run: python -I .github/over_web.py
       - name: Souhrn
         run: echo "Režim ${{ inputs.rezim }} · commit ${GITHUB_SHA::7} · cíl $FTP_SERVER$FTP_SERVER_DIR" >> "$GITHUB_STEP_SUMMARY"

@@ -5,3 +5,4 @@ __pycache__/
 *.pkl
 .env
 web/soukrome/prepocty.json
+web/app/tisk/

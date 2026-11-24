@@ -1,0 +1,7 @@
+<dialog id="r16PartDialog" aria-labelledby="r16PartTitle">
+ <header><div><small id="r16PartType">Katalog součástí</small><h2 id="r16PartTitle">Výběr dílu</h2></div><button type="button" id="r16PartClose" autofocus>Zavřít</button></header>
+ <div class="part-layout"><div class="part-visual"><div class="part-viewport"><canvas id="r16PartCanvas" tabindex="0" aria-label="Detail dílu. Tažením nebo šipkami otočíš model."></canvas><p id="r16PartEmpty">Vyber součást v seznamu.</p></div><div class="part-tools"><span>Tažením otočíš díl</span><button id="r16PartMinus" aria-label="Oddálit díl">−</button><button id="r16PartPlus" aria-label="Přiblížit díl">+</button><button id="r16PartReset">Výchozí pohled</button></div></div>
+ <div class="part-info"><fieldset><legend>Katalog</legend><label>Zobrazit <select id="r16PartFilter"><option value="all">Všechny součásti</option><option value="print">Díly s tiskovým souborem</option><option value="other">Kupované a referenční součásti</option></select></label><label>Hledat díl <input type="search" id="r16PartSearch" placeholder="Např. kyčel, kryt, servo"></label><label>Součást <select id="r16PartList"></select></label><small id="r16PartCount" aria-live="polite"></small></fieldset><p id="r16PartSource"></p>
+ <dl id="r16PartFacts"></dl><p id="r16PartNote"></p><div id="r16PartDownloads"></div>
+ <details id="r16PartProcess" hidden><summary>Nastavení tisku · X1 Carbon a Kobra S1 Max</summary><div id="r16PartProcessBody"></div></details>
+ <button type="button" id="r16GoJoint" hidden>Přejít ke kloubu</button></div></div></dialog>
