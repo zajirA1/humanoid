@@ -21,6 +21,8 @@ function robot_tisk_r16(string $name): void
             foreach (($part['files'] ?? []) as $file) {
                 if ($valid($file)) { $files[$file] = true; }
             }
+            $gcode = $part['kobra']['file'] ?? null;
+            if ($valid($gcode)) { $files[$gcode] = true; }
             $profile = $part['process']['preset_file'] ?? null;
             if ($valid($profile)) { $files[$profile] = true; }
         }
@@ -34,7 +36,7 @@ function robot_tisk_r16(string $name): void
     if (!$path || !str_starts_with($path, $root . DIRECTORY_SEPARATOR) || !is_file($path)) {
         http_response_code(404); return;
     }
-    $mime = ['3mf' => 'model/3mf', 'stl' => 'model/stl', 'json' => 'application/json'];
+    $mime = ['3mf' => 'model/3mf', 'stl' => 'model/stl', 'json' => 'application/json', 'gcode' => 'application/octet-stream'];
     $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
     if (!isset($mime[$ext])) { http_response_code(404); return; }
     header('Content-Type: ' . $mime[$ext]);

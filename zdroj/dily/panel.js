@@ -154,6 +154,12 @@ function r16CreateParts() {
       if(row.printable&&row.files?.model3mf){
         if(changed())$('r16PartNote').textContent+=' Tiskový soubor je ověřen pro základní R16. Pro jeho stažení obnov výchozí geometrii.';
         else{
+          if(row.kobra && (!offline || offline.files?.[row.kobra.file])){
+            const k=row.kobra;
+            fact('Kobra S1 Max · spotřeba',k.gramy.toFixed(2).replace('.',',')+' g · '+k.material);
+            fact('Kobra S1 Max · plát',k.plat);
+            link($('r16PartDownloads'),'Stáhnout G-code · Kobra S1 Max · 0,4 mm · '+k.material,k.file);
+          }
           link($('r16PartDownloads'),'Stáhnout díl · 3MF',row.files.model3mf);
           if(row.files.stl)link($('r16PartDownloads'),'STL',row.files.stl);
           if(row.files.project3mf)link($('r16PartDownloads'),row.reinforcement?.length?'Projekt X1 Carbon se zesílením':'Projekt pro X1 Carbon',row.files.project3mf);

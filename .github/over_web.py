@@ -55,7 +55,20 @@ def over_karty(url, manifest, cookies=()):
                 field = facts.get_by_text(label, exact=True).locator("xpath=following-sibling::dd")
                 expect(field).to_be_visible()
                 expect(field).to_have_text(value)
-            print(ident, value, "· ověřeno na kartě", flush=True)
+            kobra = part["kobra"]
+            link = page.get_by_role("link", name="Stáhnout G-code · Kobra S1 Max · 0,4 mm · " + kobra["material"], exact=True)
+            expect(link).to_be_visible()
+            with page.expect_download(timeout=120000) as pending:
+                link.click()
+            download = pending.value
+            if download.suggested_filename != Path(kobra["file"]).name:
+                raise ValueError(f"Jiný název G-code na kartě {ident}.")
+            with download.path().open("rb") as stream:
+                digest = hashlib.file_digest(stream, "sha256").hexdigest()
+            if digest != kobra["sha256"] or digest != manifest["file_checksums"][kobra["file"]]:
+                raise ValueError(f"Stažený G-code neodpovídá dílu {ident}.")
+            download.delete()
+            print(ident, kobra["material"], kobra["gramy"], "g · G-code stažen z karty a ověřen", flush=True)
         browser.close()
     print(f"Ověřeno všech {len(parts)} zobrazených karet na {url}", flush=True)
 
@@ -117,6 +130,8 @@ def main():
         manifest = json.loads(raw)
         over_karty(url, manifest, cookies)
         for name, wanted in manifest["file_checksums"].items():
+            if name.endswith(".gcode"):
+                continue  # Obsah souboru už ověřilo stažení přímo z karty v prohlížeči.
             payload = get(endpoint(name))
             if hashlib.sha256(payload).hexdigest() != wanted:
                 raise ValueError(f"Nesouhlasí SHA-256 souboru {name}")

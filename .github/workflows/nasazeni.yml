@@ -52,6 +52,7 @@ jobs:
             echo '6bb8d8983fcffd494817bb2fd11163a1999a181831895f74b4da15eb9ed1bc8c  kontrola/data/model.json' | sha256sum -c -
             python -m zipfile -e zdroj/revize/R16/tisk-overeny.zip web/app/tisk/R16
             python -I testy/t_tisk.py --lib3mf --rezy --cgal
+            python -I zdroj/tisk/pripoj_kobru.py
             python -c 'import json; s=json.load(open("web/app/tisk/R16/catalog.json"))["summary"]; assert s["printable_count"] == 54 and s["catalog_entries"] == 352'
           fi
       - name: Kontrola zobrazení 54 tiskových karet před nahráním
