@@ -10,7 +10,7 @@ const cross = (a,b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]
 const unit = v => mul(v,1/(Math.hypot(...v)||1));
 
 // X dopředu, Y vzhůru, Z doprava. Sklony obou článků se měří od vodorovné roviny.
-const base = [91,195,55], start = [212,16,125], basket = [18,137,110];
+const deckTop = 105.5, base = [91,deckTop+80,55], start = [212,16,125], basket = [18,deckTop+22,110];
 const upper = 86.2, lower = 128, nose = 39;
 const names = ['yaw_deg','upper_deg','fore_deg','jaw_gap_mm'];
 const labels = ['Otočení základny','Sklon prvního článku','Sklon předloktí','Mezera čelistí'];
@@ -37,8 +37,8 @@ function pose(t_s,label,q,event=null) {
 }
 const park = [10,75,-25,40];
 const atFloor = gap => inverse(start,gap);
-const atBowl = gap => inverse([18,165,110],gap);
-const nearBowl = gap => inverse([18,173,110],gap);
+const atBowl = gap => inverse([18,deckTop+50,110],gap);
+const nearBowl = gap => inverse([18,deckTop+58,110],gap);
 const transfer = [
     pose(0,'Výchozí poloha',park),
     pose(2.5,'Vpravo před nárazníkem',inverse([212,65,125],43)),
@@ -61,7 +61,7 @@ const sweep = [
     pose(10,'Zavřít',[143,91,-55,12]),pose(12,'Pravý bok',[85,91,-55,40]),pose(15,'Výchozí poloha',park)
 ];
 const recipe = {
-    format:'emil-eta-motion/2',model:'ETA 5229 / Waveshare Robot Arm for Pi / V3',
+    format:'emil-eta-motion/2',model:'ETA 5229 / Waveshare Robot Arm for Pi / V3.1',
     coordinates:'mm, X dopředu, Y vzhůru, Z doprava; oba sklony od horizontály',
     limits_simulation:Object.fromEntries(names.map((k,i)=>[k,lim[i]]))
 };
@@ -91,7 +91,7 @@ function carried(fs,t,q) {
         } else if (frame.event==='release') {
             if (!held) { issue='Položení bez uchopeného předmětu.'; continue; }
             held=false; dropped=true; pos=tip; releaseTime=frame.t_s;
-            inBowl=Math.abs(pos[0])<=30 && Math.abs(pos[2]-97)<=27 && pos[1]>=137 && pos[1]<=180;
+            inBowl=Math.abs(pos[0])<=30 && Math.abs(pos[2]-97)<=27 && pos[1]>=basket[1] && pos[1]<=deckTop+65;
             if (!inBowl && Math.abs(pos[1]-16)>3) issue='Místo položení nemá ověřenou oporu.';
         }
     }
@@ -103,7 +103,7 @@ function carried(fs,t,q) {
         const dt=Math.max(0,t-releaseTime);
         pos=[pos[0],Math.max(basket[1],pos[1]-4905*dt*dt),pos[2]];
     }
-    const state=held?'V chapadle':inBowl && pos[1]<=137?'V misce':dropped?'Uvolněný':'Na podlaze';
+    const state=held?'V chapadle':inBowl && pos[1]<=basket[1]?'V misce':dropped?'Uvolněný':'Na podlaze';
     return {pos,held,issue,state};
 }
 let hardware;
@@ -139,15 +139,15 @@ function check(q,held) {
     function probe([x,y,z],r) {
         if (y-r<-.2) hits.add('podlaha');
         if (Math.hypot(x,z)<175+r && y-r<83 && y+r>7) hits.add('podvozek');
-        if (Math.hypot(x,z)<164+r && y-r<115 && y+r>108) hits.add('nosný talíř');
-        if (Math.hypot(x,z)<39+r && y-r<108 && y+r>98) hits.add('lepená patka');
+        if (Math.hypot(x,z)<164+r && y-r<deckTop && y+r>hardware.lidar.deck_bottom_mm) hits.add('nosný talíř');
+        if (Math.hypot(x,z)<33+r && y-r<hardware.lidar.adhesive_y_mm[1] && y+r>hardware.lidar.adhesive_y_mm[0]) hits.add('lepicí vrstva');
         for (const obstacle of hardware.static_obstacles) {
             const [lo,hi]=obstacle.bounds_mm;
             if (x>lo[0]-r && x<hi[0]+r && y>lo[1]-r && y<hi[1]+r && z>lo[2]-r && z<hi[2]+r) hits.add(obstacle.label);
         }
-        if (Math.abs(x-91)<40+r && z>-54.6-r && z<95+r && y-r<125 && y+r>115) hits.add('základna Waveshare');
-        if (Math.abs(x)<49+r && Math.abs(z-97)<46+r && y-r<121-.15 && y+r>115) hits.add('dno misky');
-        if (y-r<133 && y+r>121 && ((Math.abs(Math.abs(x)-47.5)<1.5+r && Math.abs(z-97)<46+r) ||
+        if (Math.abs(x-91)<40+r && z>-54.6-r && z<95+r && y-r<deckTop+10 && y+r>deckTop) hits.add('základna Waveshare');
+        if (Math.abs(x)<49+r && Math.abs(z-97)<46+r && y-r<deckTop+6-.15 && y+r>deckTop) hits.add('dno misky');
+        if (y-r<deckTop+18 && y+r>deckTop+6 && ((Math.abs(Math.abs(x)-47.5)<1.5+r && Math.abs(z-97)<46+r) ||
             (Math.abs(Math.abs(z-97)-44.5)<1.5+r && Math.abs(x)<49+r))) hits.add('okraj misky');
     }
     for (const {a,b,r} of movingEnvelopes(q,held)) {

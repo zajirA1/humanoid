@@ -73,3 +73,9 @@ bash .github/kontrola.sh      kontrola před commitem (stejná běží v GitHubu
 python3 -I kontrola/prepocet.py <úprava.json> <výstup> [--rychle]   plná kontrola úpravy kloubů
 node testy/t_engine.js        výpočet sil v JS proti referenci z Pythonu (1141 poloh, shoda do 1e-4)
 ```
+
+## Emil na vysavači ETA
+
+Webová sekce je `https://robot.caribhaus.com/?model=emil`. Při každé nové verzi aktualizuj zdroj v `zdroj/emil-eta/`, přegeneruj stránku a dotčené soubory v tiskovém katalogu. Pro změnu geometrie prověř STL, projekt 3MF a souřadnice simulace. Převezmi vždy poslední vydanou geometrii z této větve.
+
+Po ověření zdrojů ulož revizi do GitHubu, proveď zkoušku a nasazení na Hetzner postupem výše. Ověř stažení po přihlášení a shodu souborů s daným commitem. Kopii a předání pro GPT i Claude ulož do projektového e2 podle pravidel výše a v projektu Emil udrž odkaz na stejnou revizi. Do předání zaznamenej ověřené cíle a případné chybějící kroky.

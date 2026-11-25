@@ -10,7 +10,7 @@ def sestav():
     styl = (src / "styl.css").read_text(encoding="utf-8")
     scenar = "\n".join((src / soubor).read_text(encoding="utf-8")
                         for soubor in ("pohyb.js", "vykresleni.js", "stereo.js", "ovladani.js"))
-    glb = base64.b64encode((src / "Emil-V3.glb").read_bytes()).decode("ascii")
+    glb = base64.b64encode((src / "Emil-V3.1.glb").read_bytes()).decode("ascii")
     html = sablona.replace("/* VLOZ_STYL */", styl)
     html += f'<script type="application/octet-stream" id="model">{glb}</script>\n'
     html += f"<script>\n{scenar}\n</script></body></html>\n"

@@ -6,7 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const src = path.join(root,'zdroj/emil-eta');
-const glb = fs.readFileSync(path.join(src,'Emil-V3.glb'));
+const glb = fs.readFileSync(path.join(src,'Emil-V3.1.glb'));
 const model = JSON.parse(glb.toString('utf8',20,20+glb.readUInt32LE(12)));
 const ctx = vm.createContext({assert, model});
 vm.runInContext(fs.readFileSync(path.join(src,'pohyb.js'),'utf8'),ctx);
@@ -29,8 +29,8 @@ assert(carried(transfer,8,sample(transfer,8)).held);
 const end=carried(transfer,25,park);
 assert(near(end.pos,basket));
 assert.equal(end.state,'V misce');
-// Původní cíl přímo před robotem protínal podvozek.
-assert(check(inverse([225,16,55],32),true).includes('podvozek'));
+// U bodu o 10 mm blíže nárazníku obálka paže zasáhne podvozek i se sníženou základnou.
+assert(check(inverse([215,16,55],32),true).includes('podvozek'));
 assert.equal(lidarShadows(park,false).length,0);
 const obstruction=lidarShadows(atFloor(32),true);
 assert(obstruction.length>0 && obstruction.every(([a,b])=>a>20 && b<45 && a<b));
@@ -56,7 +56,8 @@ for (const node of printed) {
     assert(bottom>lidar.window_y_mm[1],node.name+' protíná optické pásmo');
     if (node.extras.stl==='talir.stl') {
         assert(Math.abs(bottom-98.5)<.001);
-        assert(points.every(([x,y,z])=>Math.hypot(x,z)<=39.01 || y>=107.999));
+        assert(points.every(([,y])=>Math.abs(y-98.5)<.001 || Math.abs(y-105.5)<.001));
+        assert(Math.abs(lidar.deck_top_mm-lidar.deck_bottom_mm-7)<.001);
     }
 }
 const stereo=model.extras.stereo;
@@ -95,4 +96,4 @@ for(const name of ['miska','koule','sablona','talir','stojan','pojistka-tabletu'
     assert(page.includes('file='+file));
     assert(fs.statSync(path.join(root,'web/app/tisk/emil',file)).size>84);
 }
-console.log('Emil ETA V3: 4 002 poloh, mechanika, výhled lidar/stereo a tiskové soubory OK.');
+console.log('Emil ETA V3.1: 4 002 poloh, mechanika, výhled lidar/stereo a tiskové soubory OK.');

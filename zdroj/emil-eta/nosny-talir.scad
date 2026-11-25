@@ -1,16 +1,10 @@
-// Emil ETA 5229 / V3. Souřadnice sestavy v mm: x vpřed, y vlevo, z vzhůru.
+// Emil ETA 5229 / V3.1. Souřadnice sestavy v mm: x vpřed, y vlevo, z vzhůru.
 // Z=0 je horní plocha talíře. Přepínač part dodá STL v orientaci pro tisk.
 // Návrhové hodnoty původní sestavy ověř na fyzickém robotu před lepením.
 part = "talir"; // [talir,stojan,pojistka-tabletu,prichytka-ramene]
 $fn = 96;
 deck_r = 164;
 deck_t = 7;
-fixed_cap_height = 98;
-deck_top_height = 115;
-glue_layer = 0.5;
-bond_diameter = 66;
-pad_depth = deck_top_height - fixed_cap_height - glue_layer;
-assert(pad_depth>deck_t);
 
 module rect(x1,x2,y1,y2,z1,z2) {
     translate([x1,y1,z1]) cube([x2-x1,y2-y1,z2-z1]);
@@ -38,12 +32,7 @@ module deck_outline() {
 }
 module deck() {
   difference() {
-    union() {
-      translate([0,0,-deck_t]) linear_extrude(deck_t) deck_outline();
-      // Plná lepicí plocha bez otvorů. Přechod do desky rozvádí zatížení.
-      translate([0,0,-pad_depth]) cylinder(d=bond_diameter,h=pad_depth-deck_t+0.05);
-      translate([0,0,-deck_t-5]) cylinder(d1=bond_diameter,d2=bond_diameter+12,h=5.05);
-    }
+    translate([0,0,-deck_t]) linear_extrude(deck_t) deck_outline();
     translate([0,0,-deck_t-1]) linear_extrude(deck_t+2) union() {
       // Čtyři příchytky sevřou volné hrany tovární desky bez vrtání Waveshare.
       for(p=[[44,37],[44,-33],[138,37],[138,-69]])

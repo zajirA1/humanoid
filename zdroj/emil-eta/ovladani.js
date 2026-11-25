@@ -42,10 +42,10 @@ function frame(ts){if(!playing)return;const end=active().at(-1).t_s;currentTime=
  if(ts-lastUI>65||currentTime>=end){ui();lastUI=ts;}render();if(currentTime>=end){stop();return;}requestAnimationFrame(frame);}
 $('play').onclick=()=>{if(playing){stop();return;}if(active().length<2)return;manual=null;selected=-1;if(currentTime>=active().at(-1).t_s-.001)currentTime=0;playing=true;$('play').textContent='Pozastavit';lastStamp=performance.now();requestAnimationFrame(frame);};
 function download(data,type,name){const url=URL.createObjectURL(new Blob([data],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
-$('save').onclick=()=>{download(JSON.stringify({...recipe,name:presets[seq]?.name||'Vlastní pohyb',waypoints:active()},null,2),'application/json','Emil-ETA-V3-pohyb.json');};
-$('glb').onclick=()=>download(raw,'model/gltf-binary','Emil-ETA-Waveshare-V3.glb');
+$('save').onclick=()=>{download(JSON.stringify({...recipe,name:presets[seq]?.name||'Vlastní pohyb',waypoints:active()},null,2),'application/json','Emil-ETA-V3.1-pohyb.json');};
+$('glb').onclick=()=>download(raw,'model/gltf-binary','Emil-ETA-Waveshare-V3.1.glb');
 $('load').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>1024*1024)throw Error('Soubor je příliš velký.');const p=JSON.parse(await file.text());
- if(p.format!==recipe.format||![recipe.model,'ETA 5229 / Waveshare Robot Arm for Pi / V2'].includes(p.model))throw Error('Nekompatibilní formát nebo model.');const candidate=validate(p.waypoints);if(own.length&&!confirm('Nahradit vlastní program importovanými polohami?'))return;own=candidate;persist();pickSeq('own');mode(true);setMsg('Program načten.');}catch(e){setMsg(e.message);}finally{e.target.value='';}};
+ if(p.format!==recipe.format||![recipe.model,'ETA 5229 / Waveshare Robot Arm for Pi / V3','ETA 5229 / Waveshare Robot Arm for Pi / V2'].includes(p.model))throw Error('Nekompatibilní formát nebo model.');const candidate=validate(p.waypoints);if(own.length&&!confirm('Nahradit vlastní program importovanými polohami?'))return;own=candidate;persist();pickSeq('own');mode(true);setMsg('Program načten.');}catch(e){setMsg(e.message);}finally{e.target.value='';}};
 try{const p=JSON.parse(localStorage.getItem('emil-eta-waveshare-v2'));if(p?.length)own=validate(p);}catch{}
 function vbuttons(view){document.querySelectorAll('[data-v]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===view)));}
 document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{const v=b.dataset.v;

@@ -1,6 +1,6 @@
-"""Sestaví Emil V3 z modelu V2 (nebo původního archivu V1) a výrobních STL.
+"""Sestaví Emil V3.1 z modelu V2 (nebo původního archivu V1) a výrobních STL.
 
-Usage: python build_scene.py Emil-V2.glb Emil-V3.glb
+Usage: python build_scene.py Emil-V2.glb Emil-V3.1.glb
 Design coordinates are millimetres, Y up. glTF translations and meshes are metres.
 """
 import argparse
@@ -13,7 +13,9 @@ from pathlib import Path
 
 SRC = Path(__file__).resolve().parent
 TISK = SRC.parents[1] / 'web' / 'app' / 'tisk' / 'emil'
-TABLET_CENTER = (-56, 192 + 181.85 / 2, 0)
+DECK_BOTTOM = 98.5  # Horní víčko a návrhová vrstva lepidla 0,5 mm.
+DECK_TOP = DECK_BOTTOM + 7
+TABLET_CENTER = (-56, DECK_TOP + 77 + 181.85 / 2, 0)
 
 
 def mm(values):
@@ -40,8 +42,8 @@ def read_reference(path):
 class Scene:
     def __init__(self):
         self.doc = {
-            "asset": {"version": "2.0", "generator": "Emil V3 • ETA 5229, Waveshare WAV083, Yahboom"},
-            "scene": 0, "scenes": [{"name": "Emil V3", "nodes": [0]}],
+            "asset": {"version": "2.0", "generator": "Emil V3.1 • ETA 5229, Waveshare WAV083, Yahboom"},
+            "scene": 0, "scenes": [{"name": "Emil V3.1", "nodes": [0]}],
             "nodes": [], "meshes": [], "materials": [], "buffers": [],
             "bufferViews": [], "accessors": [],
         }
@@ -93,6 +95,8 @@ class Scene:
 
         for old in retained:
             node = copy.deepcopy(source["nodes"][old])
+            if 68 <= old <= 72:  # Dno a stěny misky byly ve V1/V2 na talíři ve výšce 115 mm.
+                node['translation'][1] += (DECK_TOP - 115) / 1000
             if old == 42:
                 node["name"] = "Redmi Pad Pro • svisle"
                 node["translation"] = mm(TABLET_CENTER)
@@ -269,7 +273,7 @@ def make_arm(s):
     horizontal = quaternion(x_axis, -90)
     zrot = lambda degree: quaternion(z_axis, degree)
 
-    mount = s.node(1, "Waveshare Robot Arm for Pi • WAV083", (91, 115, 55))
+    mount = s.node(1, "Waveshare Robot Arm for Pi • WAV083", (91, DECK_TOP, 55))
     # Retain the complete supplied rectangular base and controller. Rotation axis
     # lies 40 mm from the front edge of the 149.6 mm long plate.
     plate = [(-36,-74.8),(36,-74.8),(40,-70.8),(40,70.8),(36,74.8),(-36,74.8),(-40,70.8),(-40,-70.8)]
@@ -392,7 +396,7 @@ def make_optics(s):
     up = (math.sin(angle),math.cos(angle),0)
     centres = []
     for suffix, lateral in (("L",-55), ("R",55)):
-        origin=(-51,411,lateral)
+        origin=(-51,DECK_TOP+296,lateral)
         frame = s.node(1, "Yahboom USB • "+suffix, origin, quaternion((0,0,1),-inclination))
         # Silueta kamery v místním Z−Y. Zaoblené boky a prostřední předsazený objektiv.
         outline=[]
@@ -438,7 +442,7 @@ def make_lidar(s):
     s.disc(1,"Lepená plocha • návrhová vrstva",66,.5,s.material("Lepidlo",(204,174,125)),
            (0,98.25,0),quaternion((1,0,0),-90),60)
     s.doc["extras"]["lidar"]={"origin_mm":[0,91,0],"window_radius_mm":42,"window_y_mm":[87.5,94.5],
-        "cap_top_mm":98,"adhesive_y_mm":[98,98.5],"deck_bottom_mm":108,
+        "cap_top_mm":98,"adhesive_y_mm":[98,98.5],"deck_bottom_mm":DECK_BOTTOM,"deck_top_mm":DECK_TOP,
         "stock_posts_mm":original,"stock_posts_layout_estimated":True}
 
 
@@ -446,35 +450,35 @@ def make_mounts(s):
     deck=s.material("PETG • nosná deska", (175,62,52),0,.61)
     mast=s.material("PETG • držák tabletu", (191,202,198),0,.66)
     rail=s.material("PETG • stereolišta a příchytky",(82,104,111),0,.68)
-    s.stl("talir.stl","Nosný talíř PETG",deck,((1,0,0,0),(0,0,-1,115),(0,1,0,0)))
+    s.stl("talir.stl","Nosný talíř PETG",deck,((1,0,0,0),(0,0,-1,DECK_TOP),(0,1,0,0)))
     for file,label,material,matrix in [
-        ("stojan.stl","Stojan tabletu",mast,((0,0,1,-86),(0,1,0,115),(-1,0,0,0))),
-        ("pojistka-tabletu.stl","Horní pojistka tabletu",mast,((0,0,1,-70),(0,1,0,361),(-1,0,0,0))),
-        ("stereo-lista.stl","Společná stereolišta",rail,((0,0,1,-61),(0,1,0,402),(-1,0,0,0)))
+        ("stojan.stl","Stojan tabletu",mast,((0,0,1,-86),(0,1,0,DECK_TOP),(-1,0,0,0))),
+        ("pojistka-tabletu.stl","Horní pojistka tabletu",mast,((0,0,1,-70),(0,1,0,DECK_TOP+246),(-1,0,0,0))),
+        ("stereo-lista.stl","Společná stereolišta",rail,((0,0,1,-61),(0,1,0,DECK_TOP+287),(-1,0,0,0)))
     ]:
         bounds=s.stl(file,label,material,matrix)
         s.obstacles.append({"label":label,"bounds_mm":bounds})
     for x,z,sign in ((44,-37,1),(44,33,1),(138,-37,-1),(138,69,-1)):
         bounds=s.stl("prichytka-ramene.stl","Příchytka tovární základny",rail,
-                     ((sign,0,0,x),(0,0,-1,129.4),(0,sign,0,z)))
+                     ((sign,0,0,x),(0,0,-1,DECK_TOP+14.4),(0,sign,0,z)))
         s.obstacles.append({"label":"příchytka základny","bounds_mm":bounds})
     steel=s.material("Spojovací materiál M4",(174,183,187),.58,.35)
     vertical=quaternion((1,0,0),-90)
     for x,z in ((73,-58.6),(77,99)):
-        s.disc(1,"Koncový doraz základny Ø8",8,10,steel,(x,120,z),vertical,18)
-        s.obstacles.append({"label":"doraz základny","bounds_mm":[[x-4,115,z-4],[x+4,125,z+4]]})
+        s.disc(1,"Koncový doraz základny Ø8",8,10,steel,(x,DECK_TOP+5,z),vertical,18)
+        s.obstacles.append({"label":"doraz základny","bounds_mm":[[x-4,DECK_TOP,z-4],[x+4,DECK_TOP+10,z+4]]})
     for x,z in ((44,-37),(44,33),(138,-37),(138,69),(-79,-32),(-79,32),(-48,-32),(-48,32)):
-        y=129.4 if x>0 else 123
+        y=DECK_TOP + (14.4 if x>0 else 8)
         s.disc(1,"Podložka M4",9,.8,steel,(x,y+.4,z),vertical,16)
         s.disc(1,"Hlava M4",7,3,steel,(x,y+2.3,z),vertical,12)
-    for y,z,x in ((367,-32,-86),(367,32,-86),(402,-13,-86),(402,13,-86)):
+    for y,z,x in ((DECK_TOP+252,-32,-86),(DECK_TOP+252,32,-86),(DECK_TOP+287,-13,-86),(DECK_TOP+287,13,-86)):
         s.disc(1,"Zadní hlava šroubu příčníku",7,3,steel,(x-1.5,y,z),quaternion((0,1,0),90),12)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("reference", type=Path)
-    parser.add_argument("output", type=Path, nargs="?", default=SRC / "Emil-V3.glb")
+    parser.add_argument("output", type=Path, nargs="?", default=SRC / "Emil-V3.1.glb")
     args = parser.parse_args()
     scene = Scene()
     scene.import_emil(*read_reference(args.reference))
